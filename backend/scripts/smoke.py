@@ -20,6 +20,7 @@ from scripts.rebuild_projections import rebuild_projections_from_events
 
 async def run_smoke_test() -> bool:
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
     async with async_session_factory() as session:
