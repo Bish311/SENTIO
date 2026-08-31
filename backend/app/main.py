@@ -1,10 +1,10 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import health
+from app.api import cases, health, sim, webhooks
 from app.core.logging import logger
 
 
@@ -31,6 +31,9 @@ def create_application() -> FastAPI:
     )
 
     application.include_router(health.router)
+    application.include_router(webhooks.router)
+    application.include_router(sim.router)
+    application.include_router(cases.router)
     return application
 
 
