@@ -4,7 +4,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import admin, cases_detail, cases_list, health, sim, webhooks
+from app.api import (
+    admin,
+    cases_detail,
+    cases_list,
+    events_recent,
+    health,
+    metrics_batch,
+    metrics_ledger,
+    sim,
+    webhooks,
+)
 from app.core.logging import logger
 
 
@@ -35,6 +45,9 @@ def create_application() -> FastAPI:
     application.include_router(sim.router)
     application.include_router(cases_list.router)
     application.include_router(cases_detail.router)
+    application.include_router(metrics_batch.router)
+    application.include_router(metrics_ledger.router)
+    application.include_router(events_recent.router)
     application.include_router(admin.router)
     return application
 
