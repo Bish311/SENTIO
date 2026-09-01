@@ -1,9 +1,11 @@
 from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import now_utc
 from app.models import Intervention, PaymentLink
+
 
 async def project_intervention_proposed(session: AsyncSession, payload: dict) -> None:
     intv_id = payload.get("intervention_id")

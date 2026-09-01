@@ -1,8 +1,10 @@
 from datetime import date
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Case, Customer, Promise, Subscription
+
 
 async def project_ptp_booked(session: AsyncSession, payload: dict, event_id: int) -> None:
     promise_id = payload.get("promise_id")

@@ -1,8 +1,10 @@
 from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Case, Event
+
 
 async def project_case_opened(session: AsyncSession, event: Event) -> None:
     payload = event.payload

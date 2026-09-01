@@ -1,25 +1,27 @@
-from typing import Callable, Awaitable, Any
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.models import Event
+from typing import Awaitable, Callable
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models import Event
 from app.spine.project_case import (
-    project_case_opened,
-    project_case_diagnosed,
     project_case_closed,
+    project_case_diagnosed,
+    project_case_opened,
     project_case_prevented,
 )
 from app.spine.project_intv import (
     project_intervention_proposed,
-    project_policy_verdict,
     project_link_created,
     project_link_paid,
+    project_policy_verdict,
 )
 from app.spine.project_misc import (
+    project_optout,
     project_ptp_booked,
     project_ptp_status,
-    project_optout,
     project_retry_executed,
 )
+
 
 async def _wrap_closed(session: AsyncSession, event: Event) -> None:
     await project_case_closed(session, event.payload, event.ts)
@@ -39,9 +41,12 @@ async def _wrap_ptp_kept(session: AsyncSession, event: Event) -> None:
 async def _wrap_ptp_broken(session: AsyncSession, event: Event) -> None:
     await project_ptp_status(session, event.payload, "broken")
 
-def _default_payload(handler: Callable[[AsyncSession, dict], Awaitable[None]]) -> Callable[[AsyncSession, Event], Awaitable[None]]:
+def _default_payload(
+    handler: Callable[[AsyncSession, dict], Awaitable[None]],
+) -> Callable[[AsyncSession, Event], Awaitable[None]]:
     async def _wrapped(session: AsyncSession, event: Event) -> None:
         await handler(session, event.payload)
+
     return _wrapped
 
 _HANDLERS: dict[str, Callable[[AsyncSession, Event], Awaitable[None]]] = {

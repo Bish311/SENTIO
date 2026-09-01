@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import admin, cases_list, cases_detail, health, sim, webhooks
+from app.api import admin, cases_detail, cases_list, health, sim, webhooks
 from app.core.logging import logger
 
 
