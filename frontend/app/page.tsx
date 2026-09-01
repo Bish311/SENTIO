@@ -1,69 +1,93 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import useSWR from "swr";
+import { fetcher } from "@/lib/api";
+import { CaseItem, DenialItem, PreventionMetricsResponse } from "@/lib/types";
+import { CounterCards } from "@/components/counter";
+import { PipelineBoard } from "@/components/pipeline-board";
+import { EventTicker } from "@/components/event-ticker";
+import Link from "next/link";
+import { ArrowRight, RefreshCw } from "lucide-react";
+
+export default function CommandCenterPage() {
+  const { data: cases, mutate: mutateCases } = useSWR<CaseItem[]>(
+    "/cases?limit=100",
+    fetcher,
+    { refreshInterval: 2000 }
+  );
+
+  const { data: prevention } = useSWR<PreventionMetricsResponse>(
+    "/metrics/prevention",
+    fetcher,
+    { refreshInterval: 3000 }
+  );
+
+  const { data: denials } = useSWR<DenialItem[]>(
+    "/admin/policy-denials",
+    fetcher,
+    { refreshInterval: 3000 }
+  );
+
+  const caseList = cases || [];
+  const recoveredPaise = caseList.reduce(
+    (acc, curr) => acc + (curr.outcome === "recovered" ? curr.recovered_paise : 0),
+    0
+  );
+  const activeCasesCount = caseList.filter(
+    (c) => c.state === "opened" || c.state === "diagnosed" || c.state === "in_recovery"
+  ).length;
+  const recoveredCount = caseList.filter((c) => c.outcome === "recovered").length;
+  const recoveryRate = caseList.length > 0 ? recoveredCount / caseList.length : 0;
+  const avoidedPaise = prevention?.avoided_paise || 0;
+  const guardrailBlocksCount = denials?.length || 0;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Command Center
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Real-time policy-governed subscription recovery & temporal scheduling loop
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => mutateCases()}
+            aria-label="Refresh dashboard"
+            className="p-2 rounded-xl custom-surface hover:opacity-90 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <RefreshCw className="w-4 h-4" />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+          <Link
+            href="/ledger"
+            className="px-4 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-bold hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-sm"
           >
-            Documentation
-          </a>
+            <span>View Two-Arm Ledger</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
-      </main>
+      </div>
+
+      <CounterCards
+        recoveredPaise={recoveredPaise}
+        avoidedPaise={avoidedPaise}
+        activeCasesCount={activeCasesCount}
+        guardrailBlocksCount={guardrailBlocksCount}
+        recoveryRate={recoveryRate}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <PipelineBoard cases={caseList} />
+        </div>
+        <div>
+          <EventTicker />
+        </div>
+      </div>
     </div>
   );
 }
