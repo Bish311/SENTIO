@@ -7,13 +7,7 @@ import { fetcher } from "@/lib/api";
 import { CaseDetail } from "@/lib/types";
 import { formatISTDateTime, formatPaiseToRupees } from "@/lib/format";
 import { CaseTimeline } from "@/components/case-timeline";
-import {
-  ArrowLeft,
-  User,
-  CreditCard,
-  Sparkles,
-  Award,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 export default function CaseDetailPage({
   params,
@@ -30,13 +24,14 @@ export default function CaseDetailPage({
   if (error) {
     return (
       <div className="py-16 text-center">
-        <h2 className="text-lg font-bold text-rose-500">Case Not Found</h2>
-        <p className="text-xs text-slate-500 mt-1">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Case Not Found</h2>
+        <p className="text-xs font-medium mt-1" style={{ color: "var(--text-muted)" }}>
           Could not locate case {resolvedParams.id} on the Spine.
         </p>
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 mt-4 text-xs font-semibold px-4 py-2 rounded-xl custom-surface"
+          className="inline-flex items-center gap-1.5 mt-4 text-xs font-bold px-4 py-2 rounded-md surface border"
+          style={{ borderColor: "var(--border-color)" }}
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Command Center
@@ -47,7 +42,7 @@ export default function CaseDetailPage({
 
   if (!caseDetail) {
     return (
-      <div className="py-16 text-center text-xs text-slate-400">
+      <div className="py-16 text-center text-xs font-medium" style={{ color: "var(--text-muted)" }}>
         Loading case details from Spine...
       </div>
     );
@@ -55,103 +50,67 @@ export default function CaseDetailPage({
 
   const isRecovered = caseDetail.outcome === "recovered" || caseDetail.state === "settled";
 
+  const infoItems = [
+    { label: "Customer ID", value: caseDetail.customer_id },
+    { label: "Subscription ID", value: caseDetail.subscription_id },
+    { label: "Root Cause", value: caseDetail.root_cause ? caseDetail.root_cause.replace(/_/g, " ") : "Pending Diagnosis" },
+    { label: "Experiment Arm", value: caseDetail.arm === "agent" ? "Arm A (Sentio AI)" : "Arm B (Baseline)" },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b" style={{ borderColor: "var(--border-color)" }}>
+        <div className="flex items-center gap-3.5">
           <Link
             href="/"
-            className="p-2 rounded-xl custom-surface hover:opacity-90 transition-opacity cursor-pointer"
+            className="w-9 h-9 rounded-md flex items-center justify-center surface border hover:opacity-90"
+            style={{ borderColor: "var(--border-color)" }}
           >
-            <ArrowLeft className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+            <ArrowLeft className="w-4 h-4" style={{ color: "var(--text-primary)" }} />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-extrabold font-mono tracking-tight text-slate-900 dark:text-white">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-lg sm:text-xl font-bold font-mono" style={{ color: "var(--text-primary)" }}>
                 {caseDetail.id}
               </h1>
               <span
-                className={`text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
-                  isRecovered
-                    ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
-                    : "bg-amber-500/20 text-amber-700 dark:text-amber-300"
-                }`}
+                className="pill text-xs"
+                style={{
+                  background: isRecovered ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
+                  color: isRecovered ? "#10b981" : "#f59e0b",
+                  border: isRecovered ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(245,158,11,0.3)",
+                }}
               >
                 {caseDetail.state}
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Opened: {formatISTDateTime(caseDetail.opened_at)}
+            <p className="text-xs font-medium mt-0.5" style={{ color: "var(--text-muted)" }}>
+              Opened {formatISTDateTime(caseDetail.opened_at)}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-2 rounded-xl custom-card border text-right">
-            <span className="text-[10px] uppercase font-semibold text-slate-400 block">
-              {isRecovered ? "Recovered Amount" : "Amount At Risk"}
-            </span>
-            <span className="text-lg font-extrabold text-slate-900 dark:text-white">
-              {formatPaiseToRupees(
-                isRecovered ? caseDetail.recovered_paise : caseDetail.amount_at_risk_paise
-              )}
-            </span>
-          </div>
+        <div className="card px-5 py-3 text-right">
+          <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: "var(--text-muted)" }}>
+            {isRecovered ? "Recovered Amount" : "Amount At Risk"}
+          </span>
+          <span className="text-xl font-extrabold font-mono" style={{ color: isRecovered ? "#10b981" : "var(--text-primary)" }}>
+            {formatPaiseToRupees(isRecovered ? caseDetail.recovered_paise : caseDetail.amount_at_risk_paise)}
+          </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="custom-card rounded-2xl p-4">
-          <div className="flex items-center gap-2 text-slate-400 mb-1.5">
-            <User className="w-4 h-4 text-sky-500" />
-            <span className="text-xs font-semibold uppercase">Customer</span>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {infoItems.map((item) => (
+          <div key={item.label} className="card p-4">
+            <span className="text-[10px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: "var(--text-muted)" }}>
+              {item.label}
+            </span>
+            <span className="text-sm font-bold block truncate capitalize font-mono" style={{ color: "var(--text-primary)" }}>
+              {item.value}
+            </span>
           </div>
-          <div className="font-mono text-sm font-bold text-slate-900 dark:text-white">
-            {caseDetail.customer_id}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">
-            {caseDetail.customer_name || "Synthetic Persona (R3)"}
-          </div>
-        </div>
-
-        <div className="custom-card rounded-2xl p-4">
-          <div className="flex items-center gap-2 text-slate-400 mb-1.5">
-            <CreditCard className="w-4 h-4 text-indigo-500" />
-            <span className="text-xs font-semibold uppercase">Subscription</span>
-          </div>
-          <div className="font-mono text-sm font-bold text-slate-900 dark:text-white">
-            {caseDetail.subscription_id}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">
-            Kind: {caseDetail.kind}
-          </div>
-        </div>
-
-        <div className="custom-card rounded-2xl p-4">
-          <div className="flex items-center gap-2 text-slate-400 mb-1.5">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span className="text-xs font-semibold uppercase">Root Cause</span>
-          </div>
-          <div className="text-sm font-bold text-slate-900 dark:text-white capitalize">
-            {caseDetail.root_cause ? caseDetail.root_cause.replace(/_/g, " ") : "Pending Diagnosis"}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">
-            Lens Matrix / T1 LLM
-          </div>
-        </div>
-
-        <div className="custom-card rounded-2xl p-4">
-          <div className="flex items-center gap-2 text-slate-400 mb-1.5">
-            <Award className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs font-semibold uppercase">Experiment Arm</span>
-          </div>
-          <div className="text-sm font-bold text-slate-900 dark:text-white uppercase font-mono">
-            {caseDetail.arm === "agent" ? "Arm A (Sentio AI)" : "Arm B (Baseline)"}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">
-            Batch: {caseDetail.batch_id || "Live"}
-          </div>
-        </div>
+        ))}
       </div>
 
       <CaseTimeline events={caseDetail.timeline || []} />

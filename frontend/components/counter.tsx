@@ -9,6 +9,7 @@ interface CounterProps {
   activeCasesCount: number;
   guardrailBlocksCount: number;
   recoveryRate?: number;
+  isOnline: boolean;
 }
 
 export function CounterCards({
@@ -17,71 +18,83 @@ export function CounterCards({
   activeCasesCount,
   guardrailBlocksCount,
   recoveryRate = 0,
+  isOnline,
 }: CounterProps) {
+  const hasData = recoveredPaise > 0 || avoidedPaise > 0 || activeCasesCount > 0 || guardrailBlocksCount > 0;
+
   const cards = [
     {
       title: "Revenue Recovered",
-      value: formatPaiseToRupees(recoveredPaise),
-      subtext: `${(recoveryRate * 100).toFixed(1)}% recovery rate across cases`,
+      value: hasData ? formatPaiseToRupees(recoveredPaise) : "—",
+      sub: hasData ? `${(recoveryRate * 100).toFixed(1)}% recovery rate` : "Awaiting initial batch",
       icon: TrendingUp,
-      accent: "from-emerald-500/20 to-emerald-500/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-      pill: "LIVE AUDIT",
+      color: "#10b981",
+      bg: "rgba(16,185,129,0.12)",
+      border: "rgba(16,185,129,0.3)",
     },
     {
       title: "Loss Avoided (Pulse)",
-      value: formatPaiseToRupees(avoidedPaise),
-      subtext: "Proactive card/budget sweeps",
+      value: hasData ? formatPaiseToRupees(avoidedPaise) : "—",
+      sub: "Proactive mandate & card sweeps",
       icon: Zap,
-      accent: "from-sky-500/20 to-sky-500/5 text-sky-600 dark:text-sky-400 border-sky-500/30",
-      pill: "PREVENTED",
+      color: "#0284c7",
+      bg: "rgba(2,132,199,0.12)",
+      border: "rgba(2,132,199,0.3)",
     },
     {
       title: "Active Pipeline",
       value: activeCasesCount.toString(),
-      subtext: "Cases in temporal recovery",
+      sub: "Cases in recovery ladder",
       icon: Layers,
-      accent: "from-indigo-500/20 to-indigo-500/5 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
-      pill: "PIPELINE",
+      color: "#8b5cf6",
+      bg: "rgba(139,92,246,0.12)",
+      border: "rgba(139,92,246,0.3)",
     },
     {
       title: "Guardrail Blocks",
       value: guardrailBlocksCount.toString(),
-      subtext: "100% policy violations blocked",
+      sub: "100% policy violations gated",
       icon: ShieldAlert,
-      accent: "from-rose-500/20 to-rose-500/5 text-rose-600 dark:text-rose-400 border-rose-500/30",
-      pill: "ZERO HARASSMENT",
+      color: "#ef4444",
+      bg: "rgba(239,68,68,0.12)",
+      border: "rgba(239,68,68,0.3)",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card, idx) => {
-        const Icon = card.icon;
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      {cards.map((c, i) => {
+        const Icon = c.icon;
         return (
-          <div
-            key={idx}
-            className="custom-card rounded-2xl p-5 relative overflow-hidden transition-all duration-200 hover:scale-[1.01]"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
-                {card.title}
+          <div key={i} className="card p-6 flex flex-col justify-between min-h-[145px]">
+            <div className="flex items-center justify-between mb-4">
+              <span
+                className="text-xs font-bold uppercase tracking-wider"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {c.title}
               </span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                {card.pill}
-              </span>
+              <div
+                className="w-9 h-9 rounded-md flex items-center justify-center shrink-0 border"
+                style={{ background: c.bg, borderColor: c.border }}
+              >
+                <Icon className="w-5 h-5" style={{ color: c.color }} />
+              </div>
             </div>
-            <div className="flex items-baseline justify-between">
-              <div>
-                <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                  {card.value}
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                  {card.subtext}
-                </p>
+
+            <div>
+              <div
+                className="text-2xl sm:text-3xl font-extrabold tracking-tight"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {!isOnline && !hasData ? "—" : c.value}
               </div>
-              <div className={`p-2.5 rounded-xl bg-gradient-to-br border ${card.accent}`}>
-                <Icon className="w-5 h-5" />
-              </div>
+              <p
+                className="text-xs font-medium mt-1.5"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {c.sub}
+              </p>
             </div>
           </div>
         );

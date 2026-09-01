@@ -2,91 +2,79 @@
 
 import useSWR from "swr";
 import { fetcher } from "@/lib/api";
-import { CaseItem, DenialItem, PreventionMetricsResponse } from "@/lib/types";
+import { CaseItem, PreventionMetricsResponse } from "@/lib/types";
 import { CounterCards } from "@/components/counter";
 import { PipelineBoard } from "@/components/pipeline-board";
 import { EventTicker } from "@/components/event-ticker";
 import Link from "next/link";
-import { ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function CommandCenterPage() {
-  const { data: cases, mutate: mutateCases } = useSWR<CaseItem[]>(
+  const { data: cases, error: casesError } = useSWR<CaseItem[]>(
     "/cases?limit=100",
     fetcher,
-    { refreshInterval: 2000 }
+    { refreshInterval: 2000, errorRetryInterval: 5000 }
   );
 
   const { data: prevention } = useSWR<PreventionMetricsResponse>(
     "/metrics/prevention",
     fetcher,
-    { refreshInterval: 3000 }
+    { refreshInterval: 5000, errorRetryInterval: 8000 }
   );
 
-  const { data: denials } = useSWR<DenialItem[]>(
-    "/admin/policy-denials",
-    fetcher,
-    { refreshInterval: 3000 }
-  );
-
+  const isOnline = !casesError;
   const caseList = cases || [];
+
   const recoveredPaise = caseList.reduce(
-    (acc, curr) => acc + (curr.outcome === "recovered" ? curr.recovered_paise : 0),
+    (acc, c) => acc + (c.outcome === "recovered" ? c.recovered_paise : 0),
     0
   );
-  const activeCasesCount = caseList.filter(
+  const activeCases = caseList.filter(
     (c) => c.state === "opened" || c.state === "diagnosed" || c.state === "in_recovery"
   ).length;
   const recoveredCount = caseList.filter((c) => c.outcome === "recovered").length;
-  const recoveryRate = caseList.length > 0 ? recoveredCount / caseList.length : 0;
-  const avoidedPaise = prevention?.avoided_paise || 0;
-  const guardrailBlocksCount = denials?.length || 0;
+  const rate = caseList.length > 0 ? recoveredCount / caseList.length : 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-1">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+          <h1
+            className="text-2xl sm:text-3xl font-extrabold tracking-tight"
+            style={{ color: "var(--text-primary)" }}
+          >
             Command Center
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p
+            className="text-xs sm:text-sm font-medium mt-1"
+            style={{ color: "var(--text-secondary)" }}
+          >
             Real-time policy-governed subscription recovery & temporal scheduling loop
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => mutateCases()}
-            aria-label="Refresh dashboard"
-            className="p-2 rounded-xl custom-surface hover:opacity-90 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
-          <Link
-            href="/ledger"
-            className="px-4 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-bold hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-sm"
-          >
-            <span>View Two-Arm Ledger</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
+        <Link
+          href="/ledger"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-md text-xs font-bold text-white shadow-sm transition-all hover:opacity-90"
+          style={{ background: "var(--accent-purple-strong)" }}
+        >
+          <span>View Two-Arm Ledger</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
 
       <CounterCards
         recoveredPaise={recoveredPaise}
-        avoidedPaise={avoidedPaise}
-        activeCasesCount={activeCasesCount}
-        guardrailBlocksCount={guardrailBlocksCount}
-        recoveryRate={recoveryRate}
+        avoidedPaise={prevention?.avoided_paise || 0}
+        activeCasesCount={activeCases}
+        guardrailBlocksCount={0}
+        recoveryRate={rate}
+        isOnline={isOnline}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <PipelineBoard cases={caseList} />
-        </div>
-        <div>
-          <EventTicker />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
+        <PipelineBoard cases={caseList} />
+        <EventTicker />
       </div>
     </div>
   );

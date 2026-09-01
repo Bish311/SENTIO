@@ -7,13 +7,7 @@ import { DenialItem } from "@/lib/types";
 import { formatISTDateTime } from "@/lib/format";
 import { KillSwitch } from "@/components/kill-switch";
 import { ReceiptChip } from "@/components/receipt-chip";
-import {
-  ShieldAlert,
-  Play,
-  Download,
-  Terminal,
-  RefreshCw,
-} from "lucide-react";
+import { Play, Download, ShieldAlert, Terminal, RefreshCw } from "lucide-react";
 
 export default function AdminPage() {
   const [adminToken] = useState("dev-admin-secret-2026");
@@ -23,172 +17,164 @@ export default function AdminPage() {
   const { data: denials, mutate: mutateDenials } = useSWR<DenialItem[]>(
     "/admin/policy-denials",
     () => adminFetcher("/admin/policy-denials", adminToken),
-    { refreshInterval: 3000 }
+    { refreshInterval: 5000, errorRetryInterval: 10000 }
   );
 
-  const handleRunSimBatch = async () => {
+  const handleRunSim = async () => {
     setSimLoading(true);
     setSimMessage(null);
     try {
-      const res = await postData(
-        "/sim/batch",
-        { n: 20, seed: 42 },
-        adminToken
-      );
-      setSimMessage(`Created batch ${String(res.batch_id)} with 20 seeded test cases!`);
+      const res = await postData("/sim/batch", { n: 20, seed: 42 });
+      setSimMessage(`Batch ${String(res.batch_id)} created with 20 test cases!`);
     } catch (err: unknown) {
-      setSimMessage(`Batch error: ${err instanceof Error ? err.message : "Unknown error"}`);
+      setSimMessage(err instanceof Error ? err.message : "Failed to run simulation batch");
     } finally {
       setSimLoading(false);
     }
   };
 
-  const handleExportEvents = async () => {
+  const handleExport = async () => {
     try {
       const events = await adminFetcher("/admin/events/export", adminToken);
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(events, null, 2));
-      const downloadAnchor = document.createElement("a");
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `sentio_spine_events_${Date.now()}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
+      const blob = new Blob([JSON.stringify(events, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sentio_audit_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch (err: unknown) {
-      alert("Failed to export events: " + (err instanceof Error ? err.message : "Unknown error"));
+      alert(err instanceof Error ? err.message : "Export failed");
     }
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>
           Admin & Compliance Console
         </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Master control, policy violation audit feed, and simulation batch tools
+        <p className="text-xs font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>
+          Master system controls, policy violation audit feed, and simulation batch runner
         </p>
       </div>
 
       <KillSwitch />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="custom-card rounded-2xl p-6 flex flex-col justify-between">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Simulator Controls Card */}
+        <div className="card p-5 flex flex-col justify-between min-h-[160px]">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Terminal className="w-5 h-5 text-indigo-500" />
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Terminal className="w-4 h-4" style={{ color: "#6366f1" }} />
+              <h3 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
                 Mirror Simulator Controls
               </h3>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Generate wire-identical synthetic Razorpay failures (200-case seed or 20-case test batch) to exercise recovery ladders.
+            <p className="text-xs font-medium mb-3" style={{ color: "var(--text-secondary)" }}>
+              Generate wire-identical synthetic Razorpay failures (20-case batch) to exercise recovery ladders.
             </p>
           </div>
 
-          <div className="space-y-3 pt-3 border-t border-inherit">
+          <div>
             <button
-              onClick={handleRunSimBatch}
+              onClick={handleRunSim}
               disabled={simLoading}
-              className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center justify-center gap-2 shadow-sm cursor-pointer ${
-                simLoading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className="w-full py-2.5 px-4 rounded-md text-xs font-bold uppercase tracking-wider text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
             >
-              <Play className="w-4 h-4" />
-              {simLoading ? "Generating Batch..." : "Run 20-Case Seeded Simulation"}
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>{simLoading ? "Creating Batch..." : "Run 20-Case Seeded Simulation"}</span>
             </button>
 
             {simMessage && (
-              <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 text-center">
+              <p className="text-xs text-center font-bold mt-2" style={{ color: "#6366f1" }}>
                 {simMessage}
               </p>
             )}
           </div>
         </div>
 
-        <div className="custom-card rounded-2xl p-6 flex flex-col justify-between">
+        {/* Export Card */}
+        <div className="card p-5 flex flex-col justify-between min-h-[160px]">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Download className="w-5 h-5 text-sky-500" />
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Download className="w-4 h-4" style={{ color: "#0284c7" }} />
+              <h3 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
                 Spine Audit Stream Export
               </h3>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Download the complete immutable event store log for offline auditing, compliance verification, and metric reproduction.
+            <p className="text-xs font-medium mb-3" style={{ color: "var(--text-secondary)" }}>
+              Download the complete immutable event store log for offline auditing and metric reproduction.
             </p>
           </div>
 
-          <div className="pt-3 border-t border-inherit">
+          <div>
             <button
-              onClick={handleExportEvents}
-              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              onClick={handleExport}
+              className="w-full py-2.5 px-4 rounded-md text-xs font-bold uppercase tracking-wider bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 active:opacity-100 transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
             >
-              <Download className="w-4 h-4" />
-              Export Full Event Store (JSON)
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Full Event Store (JSON)</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="custom-card rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-4">
+      {/* Policy Denials Feed Card */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-rose-500" />
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                Live Policy Denials Feed
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Interventions blocked by Guard rules (quiet hours, contact caps, retry ceiling)
-              </p>
-            </div>
+            <ShieldAlert className="w-4 h-4" style={{ color: "#ef4444" }} />
+            <h3 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+              Live Policy Denials Feed
+            </h3>
+            {denials && denials.length > 0 && (
+              <span className="pill text-[10px] font-bold" style={{ background: "rgba(239,68,68,0.15)", color: "#ef4444" }}>
+                {denials.length}
+              </span>
+            )}
           </div>
           <button
             onClick={() => mutateDenials()}
-            aria-label="Refresh denials"
-            className="p-2 rounded-xl custom-surface hover:opacity-90 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+            className="p-1 rounded-md text-xs font-medium surface flex items-center gap-1 cursor-pointer hover:opacity-80"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3 h-3" />
             <span>Sync</span>
           </button>
         </div>
 
-        <div className="space-y-3">
-          {(!denials || denials.length === 0) ? (
-            <div className="py-8 text-center text-xs text-slate-400 dark:text-slate-500 italic">
-              No policy denials recorded yet. All proposed interventions have complied with Guard rules.
-            </div>
-          ) : (
-            denials.map((denial) => (
+        {(!denials || denials.length === 0) ? (
+          <div className="surface p-4 text-center text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+            No policy violations recorded yet. All proposed interventions have complied with Guard rules.
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+            {denials.map((d) => (
               <div
-                key={denial.event_id}
-                className="custom-surface rounded-xl p-4 border border-rose-500/20 flex flex-wrap items-center justify-between gap-3"
+                key={d.event_id}
+                className="surface p-3 flex flex-wrap items-center justify-between gap-2 border"
+                style={{ borderColor: "rgba(239,68,68,0.25)" }}
               >
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono font-bold text-xs text-slate-900 dark:text-white">
-                      Case: {denial.case_id}
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-xs font-mono font-bold" style={{ color: "var(--text-primary)" }}>
+                      Case: {d.case_id}
                     </span>
-                    <span className="text-[11px] text-slate-400 font-mono">
-                      {formatISTDateTime(denial.ts)}
+                    <span className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
+                      {formatISTDateTime(d.ts)}
                     </span>
                   </div>
-                  {denial.receipt?.violations && (
-                    <div className="text-xs text-rose-600 dark:text-rose-400 font-medium">
-                      Violations: {denial.receipt.violations.join(", ").replace(/_/g, " ")}
-                    </div>
+                  {d.receipt?.violations && d.receipt.violations.length > 0 && (
+                    <p className="text-xs font-bold" style={{ color: "#ef4444" }}>
+                      Violations: {d.receipt.violations.join(", ").replace(/_/g, " ")}
+                    </p>
                   )}
                 </div>
-
-                {denial.receipt && (
-                  <div>
-                    <ReceiptChip receipt={denial.receipt} />
-                  </div>
-                )}
+                {d.receipt && <ReceiptChip receipt={d.receipt} />}
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { postData } from "@/lib/api";
-import { Power, AlertTriangle } from "lucide-react";
+import { Power } from "lucide-react";
 
 interface KillSwitchProps {
   initialState?: boolean;
@@ -19,11 +19,7 @@ export function KillSwitch({ initialState = false, onToggle }: KillSwitchProps) 
     setError(null);
     try {
       const nextState = !isActive;
-      await postData(
-        "/admin/kill-switch",
-        { enabled: nextState },
-        "dev-admin-secret-2026"
-      );
+      await postData("/admin/kill-switch", { enabled: nextState }, "dev-admin-secret-2026");
       setIsActive(nextState);
       if (onToggle) onToggle(nextState);
     } catch (err: unknown) {
@@ -34,34 +30,35 @@ export function KillSwitch({ initialState = false, onToggle }: KillSwitchProps) 
   };
 
   return (
-    <div className="custom-card rounded-2xl p-6 border">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+    <div className="card p-6">
+      <div className="flex flex-wrap items-center justify-between gap-5">
+        <div className="flex items-center gap-4">
           <div
-            className={`p-3 rounded-2xl border ${
-              isActive
-                ? "bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40"
-                : "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
-            }`}
+            className="w-12 h-12 rounded-md flex items-center justify-center shrink-0 border"
+            style={{
+              background: isActive ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)",
+              borderColor: isActive ? "rgba(239,68,68,0.3)" : "rgba(16,185,129,0.3)",
+            }}
           >
-            <Power className="w-6 h-6" />
+            <Power className="w-6 h-6" style={{ color: isActive ? "#ef4444" : "#10b981" }} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <div className="flex items-center gap-2.5">
+              <h3 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
                 Master Compliance Kill Switch
               </h3>
               <span
-                className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                  isActive
-                    ? "bg-rose-500 text-white animate-pulse"
-                    : "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
-                }`}
+                className="pill text-[10px]"
+                style={{
+                  background: isActive ? "rgba(239,68,68,0.2)" : "rgba(16,185,129,0.2)",
+                  color: isActive ? "#ef4444" : "#10b981",
+                  border: isActive ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(16,185,129,0.4)",
+                }}
               >
                 {isActive ? "HALTED (ACTIVE)" : "ENGAGED (AUTONOMOUS)"}
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs font-medium mt-1" style={{ color: "var(--text-secondary)" }}>
               Rule 1: Instantly halts all outgoing interventions and retries across the entire system.
             </p>
           </div>
@@ -70,22 +67,15 @@ export function KillSwitch({ initialState = false, onToggle }: KillSwitchProps) 
         <button
           onClick={handleToggle}
           disabled={loading}
-          className={`px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-md cursor-pointer flex items-center gap-2 ${
-            isActive
-              ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-              : "bg-rose-600 hover:bg-rose-700 text-white"
-          } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+          className="px-5 py-2.5 rounded-md text-xs font-extrabold uppercase tracking-wider text-white cursor-pointer transition-all shadow-sm hover:opacity-90 disabled:opacity-50"
+          style={{ background: isActive ? "#10b981" : "#ef4444" }}
         >
-          <Power className="w-4 h-4" />
           {loading ? "Updating..." : isActive ? "Resume Autonomous Actions" : "HALT ALL INTERVENTIONS"}
         </button>
       </div>
 
       {error && (
-        <div className="mt-3 text-xs text-rose-500 flex items-center gap-1.5 font-medium">
-          <AlertTriangle className="w-4 h-4" />
-          <span>{error}</span>
-        </div>
+        <p className="text-xs font-bold mt-3" style={{ color: "#ef4444" }}>{error}</p>
       )}
     </div>
   );

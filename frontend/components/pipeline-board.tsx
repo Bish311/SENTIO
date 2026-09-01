@@ -9,128 +9,158 @@ interface PipelineBoardProps {
   cases: CaseItem[];
 }
 
+const COLUMNS = [
+  { id: "opened", label: "Opened", states: ["opened"], dot: "#f59e0b", badgeBg: "rgba(245,158,11,0.15)", badgeText: "#d97706" },
+  { id: "diagnosed", label: "Diagnosed", states: ["diagnosed"], dot: "#0ea5e9", badgeBg: "rgba(14,165,233,0.15)", badgeText: "#0284c7" },
+  { id: "in_recovery", label: "In Recovery", states: ["in_recovery"], dot: "#6366f1", badgeBg: "rgba(99,102,241,0.15)", badgeText: "#4f46e5" },
+  { id: "settled", label: "Settled", states: ["settled"], dot: "#10b981", badgeBg: "rgba(16,185,129,0.15)", badgeText: "#059669" },
+  { id: "closed", label: "Closed / Halted", states: ["halted", "closed"], dot: "#94a3b8", badgeBg: "rgba(148,163,184,0.15)", badgeText: "#64748b" },
+];
+
 export function PipelineBoard({ cases }: PipelineBoardProps) {
-  const columns = [
-    {
-      id: "opened",
-      label: "Opened",
-      states: ["opened"],
-      color: "border-amber-400/40 bg-amber-500/5 text-amber-600 dark:text-amber-400",
-    },
-    {
-      id: "diagnosed",
-      label: "Diagnosed",
-      states: ["diagnosed"],
-      color: "border-sky-400/40 bg-sky-500/5 text-sky-600 dark:text-sky-400",
-    },
-    {
-      id: "in_recovery",
-      label: "In Recovery",
-      states: ["in_recovery"],
-      color: "border-indigo-400/40 bg-indigo-500/5 text-indigo-600 dark:text-indigo-400",
-    },
-    {
-      id: "settled",
-      label: "Settled / Recovered",
-      states: ["settled"],
-      color: "border-emerald-400/40 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400",
-    },
-    {
-      id: "closed",
-      label: "Halted / Closed",
-      states: ["halted", "closed"],
-      color: "border-slate-400/40 bg-slate-500/5 text-slate-600 dark:text-slate-400",
-    },
-  ];
+  if (cases.length === 0) {
+    return (
+      <div className="card p-6 sm:p-7 h-full flex flex-col justify-between min-h-[460px]">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
+              Recovery Pipeline Board
+            </h2>
+            <span
+              className="pill"
+              style={{ background: "var(--bg-surface)", color: "var(--text-muted)" }}
+            >
+              0 Total Cases
+            </span>
+          </div>
+          <p className="text-xs mb-6 font-medium" style={{ color: "var(--text-muted)" }}>
+            Real-time state progression for active and completed cases across recovery ladders.
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
+            {COLUMNS.map((col) => (
+              <div
+                key={col.id}
+                className="surface p-5 flex flex-col items-center justify-center gap-2.5 min-h-[220px]"
+                style={{ border: "1px dashed var(--border-color)" }}
+              >
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full" style={{ background: col.dot }} />
+                  <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
+                    {col.label}
+                  </span>
+                </div>
+                <span className="text-2xl font-extrabold" style={{ color: "var(--text-muted)" }}>0</span>
+                <span className="text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>₹0 volume</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div
+          className="surface p-3.5 mt-6 text-center text-xs font-semibold"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          No active cases yet. Head to the <strong style={{ color: "var(--text-primary)" }}>Admin</strong> page to launch a seeded simulation batch.
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="custom-card rounded-2xl p-5 overflow-hidden">
-      <div className="flex items-center justify-between mb-4">
+    <div className="card p-6 min-h-[460px] flex flex-col">
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+          <h2 className="text-base font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
             Recovery Pipeline Board
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Real-time state progression for active and completed cases
+          <p className="text-xs font-medium mt-0.5" style={{ color: "var(--text-muted)" }}>
+            {cases.length} total cases in active and historical lifecycles
           </p>
         </div>
-        <span className="text-xs font-semibold px-2.5 py-1 rounded-full custom-surface">
-          {cases.length} Total Cases
+        <span
+          className="pill"
+          style={{ background: "var(--bg-surface)", color: "var(--text-secondary)" }}
+        >
+          {cases.length} Cases
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3.5 overflow-x-auto">
-        {columns.map((col) => {
-          const columnCases = cases.filter((c) => col.states.includes(c.state));
-          const totalPaise = columnCases.reduce(
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 flex-1">
+        {COLUMNS.map((col) => {
+          const items = cases.filter((c) => col.states.includes(c.state));
+          const totalPaise = items.reduce(
             (acc, curr) => acc + (curr.state === "settled" ? curr.recovered_paise : curr.amount_at_risk_paise),
             0
           );
 
           return (
-            <div
-              key={col.id}
-              className="flex flex-col rounded-xl custom-surface p-3 min-w-[210px] min-h-[360px]"
-            >
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-inherit">
+            <div key={col.id} className="surface p-3 flex flex-col min-h-[320px]">
+              <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b" style={{ borderColor: "var(--border-color)" }}>
                 <div className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full border ${col.color}`} />
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                  <div className="w-2 h-2 rounded-full" style={{ background: col.dot }} />
+                  <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-primary)" }}>
                     {col.label}
                   </span>
                 </div>
-                <span className="text-xs font-bold px-1.5 py-0.5 rounded-md bg-white/50 dark:bg-black/20 text-slate-700 dark:text-slate-300">
-                  {columnCases.length}
+                <span
+                  className="pill text-[10px]"
+                  style={{ background: col.badgeBg, color: col.badgeText }}
+                >
+                  {items.length}
                 </span>
               </div>
 
-              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-2.5 px-1">
+              <div className="text-[11px] font-bold mb-2.5 px-1" style={{ color: "var(--text-muted)" }}>
                 Volume: {formatPaiseToRupees(totalPaise)}
               </div>
 
-              <div className="flex-1 flex flex-col gap-2 overflow-y-auto max-h-[460px] pr-0.5">
-                {columnCases.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500 italic">
-                    No cases
+              <div className="flex-1 flex flex-col gap-2 overflow-y-auto max-h-[380px] pr-0.5">
+                {items.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center">
+                    <span className="text-xs italic font-medium" style={{ color: "var(--text-muted)" }}>No cases</span>
                   </div>
                 ) : (
-                  columnCases.map((caseItem) => (
+                  items.map((c) => (
                     <Link
-                      key={caseItem.id}
-                      href={`/cases/${caseItem.id}`}
-                      className="group bg-white dark:bg-slate-900/80 rounded-xl p-3 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-400 dark:hover:border-slate-600 transition-all text-left flex flex-col justify-between cursor-pointer"
+                      key={c.id}
+                      href={`/cases/${c.id}`}
+                      className="group p-3 rounded-md transition-all block border"
+                      style={{
+                        background: "var(--bg-card)",
+                        borderColor: "var(--border-color)",
+                      }}
                     >
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-bold font-mono text-slate-800 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
-                            {caseItem.id.slice(0, 12)}...
-                          </span>
-                          <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                        </div>
-
-                        <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 mb-2">
-                          <User className="w-3 h-3" />
-                          <span>{caseItem.customer_id}</span>
-                        </div>
-
-                        {caseItem.root_cause && (
-                          <div className="mb-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                              {caseItem.root_cause.replace(/_/g, " ")}
-                            </span>
-                          </div>
-                        )}
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-mono font-bold truncate pr-1" style={{ color: "var(--text-primary)" }}>
+                          {c.id.slice(0, 12)}
+                        </span>
+                        <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 shrink-0 transition-opacity" style={{ color: "var(--text-primary)" }} />
                       </div>
 
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-900 dark:text-white">
-                          {formatPaiseToRupees(
-                            caseItem.state === "settled" ? caseItem.recovered_paise : caseItem.amount_at_risk_paise
-                          )}
+                      <div className="flex items-center gap-1 text-[11px] font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
+                        <User className="w-3 h-3" />
+                        <span className="truncate">{c.customer_id}</span>
+                      </div>
+
+                      {c.root_cause && (
+                        <div className="mb-2">
+                          <span
+                            className="pill text-[9px]"
+                            style={{ background: "var(--bg-surface)", color: "var(--text-primary)" }}
+                          >
+                            {c.root_cause.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="pt-2 border-t flex items-center justify-between" style={{ borderColor: "var(--border-color)" }}>
+                        <span className="text-xs font-extrabold" style={{ color: "var(--text-primary)" }}>
+                          {formatPaiseToRupees(c.state === "settled" ? c.recovered_paise : c.amount_at_risk_paise)}
                         </span>
-                        <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
-                          <Clock className="w-2.5 h-2.5" />
-                          {formatRelativeTime(caseItem.opened_at)}
+                        <span className="text-[10px] flex items-center gap-0.5 font-medium" style={{ color: "var(--text-muted)" }}>
+                          <Clock className="w-3 h-3" />
+                          {formatRelativeTime(c.opened_at)}
                         </span>
                       </div>
                     </Link>

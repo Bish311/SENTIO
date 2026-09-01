@@ -3,7 +3,6 @@
 import useSWR from "swr";
 import { fetcher } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/format";
-import { RefreshCw } from "lucide-react";
 
 interface EventItem {
   id: number;
@@ -14,96 +13,105 @@ interface EventItem {
   payload: Record<string, unknown>;
 }
 
+const ACTOR_BADGES: Record<string, { bg: string; text: string }> = {
+  policy: { bg: "rgba(239,68,68,0.15)", text: "#ef4444" },
+  agent: { bg: "rgba(99,102,241,0.15)", text: "#6366f1" },
+  reach: { bg: "rgba(14,165,233,0.15)", text: "#0ea5e9" },
+  system: { bg: "rgba(16,185,129,0.15)", text: "#10b981" },
+  customer: { bg: "rgba(245,158,11,0.15)", text: "#f59e0b" },
+  sim: { bg: "rgba(139,92,246,0.15)", text: "#8b5cf6" },
+  admin: { bg: "rgba(236,72,153,0.15)", text: "#ec4899" },
+};
+
 export function EventTicker() {
-  const { data: events, error, mutate } = useSWR<EventItem[]>(
+  const { data: events, error } = useSWR<EventItem[]>(
     "/events/recent?limit=25",
     fetcher,
-    { refreshInterval: 2000 }
+    { refreshInterval: 2000, errorRetryInterval: 5000 }
   );
 
-  const getActorBadge = (actor: string) => {
-    switch (actor) {
-      case "policy":
-        return "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30";
-      case "agent":
-        return "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30";
-      case "reach":
-        return "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30";
-      case "system":
-        return "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
-      case "customer":
-        return "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30";
-      default:
-        return "bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30";
-    }
-  };
-
   return (
-    <div className="custom-card rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3.5">
-        <div className="flex items-center gap-2">
-          <div className="relative flex items-center justify-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping absolute" />
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 relative" />
-          </div>
-          <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
-            Live Spine Audit Ticker
+    <div className="card p-6 h-full flex flex-col justify-between min-h-[460px]">
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-base font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
+            Audit Stream
           </h2>
+          {events && events.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-bold" style={{ color: "#10b981" }}>Live 2s</span>
+            </div>
+          )}
         </div>
-        <button
-          onClick={() => mutate()}
-          aria-label="Refresh events"
-          className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-1 p-1 rounded-md transition-colors cursor-pointer"
-        >
-          <RefreshCw className="w-3 h-3" />
-          <span>Syncing 2s</span>
-        </button>
-      </div>
+        <p className="text-xs font-medium mb-4" style={{ color: "var(--text-muted)" }}>
+          Immutable Spine events stream in real-time.
+        </p>
 
-      <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
-        {(!events || events.length === 0) && !error && (
-          <div className="py-8 text-center text-xs text-slate-400 dark:text-slate-500 italic">
-            Waiting for live events on the Spine...
-          </div>
-        )}
-
-        {error && (
-          <div className="py-6 text-center text-xs text-rose-500">
-            Unable to stream events from backend API.
-          </div>
-        )}
-
-        {events &&
-          events.map((ev) => (
-            <div
-              key={ev.id}
-              className="flex items-center justify-between p-2.5 rounded-xl custom-surface text-xs hover:bg-white/60 dark:hover:bg-white/5 transition-all"
-            >
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <span
-                  className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-md border shrink-0 ${getActorBadge(
-                    ev.actor
-                  )}`}
-                >
-                  {ev.actor}
-                </span>
-
-                <span className="font-mono font-semibold text-slate-800 dark:text-slate-200 truncate">
-                  {ev.event_type}
-                </span>
-
-                {ev.case_id && (
-                  <span className="text-[11px] text-slate-400 font-mono hidden sm:inline truncate">
-                    case: {ev.case_id.slice(0, 10)}
-                  </span>
-                )}
+        <div className="flex flex-col gap-2 overflow-y-auto max-h-[380px] pr-1">
+          {error && (
+            <div className="surface p-6 text-center flex flex-col items-center justify-center gap-2 my-auto">
+              <div
+                className="w-10 h-10 rounded-md flex items-center justify-center text-lg font-bold"
+                style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b" }}
+              >
+                ⚡
               </div>
-
-              <span className="text-[11px] text-slate-400 font-medium shrink-0 ml-2">
-                {formatRelativeTime(ev.ts)}
+              <span className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>
+                Backend Offline
+              </span>
+              <span className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+                Start FastAPI on port 8000 to stream live audit events
               </span>
             </div>
-          ))}
+          )}
+
+          {!error && (!events || events.length === 0) && (
+            <div className="surface p-6 text-center text-xs font-medium italic my-auto" style={{ color: "var(--text-muted)" }}>
+              Waiting for events to be appended to the Spine...
+            </div>
+          )}
+
+          {events && events.map((ev) => {
+            const badge = ACTOR_BADGES[ev.actor] || { bg: "var(--bg-surface)", text: "var(--text-muted)" };
+            return (
+              <div
+                key={ev.id}
+                className="surface p-3 flex items-center justify-between gap-3 border transition-colors hover:border-slate-400"
+                style={{ borderColor: "var(--border-color)" }}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="pill text-[9px] shrink-0"
+                    style={{ background: badge.bg, color: badge.text }}
+                  >
+                    {ev.actor}
+                  </span>
+                  <span
+                    className="text-xs font-mono font-bold truncate"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {ev.event_type}
+                  </span>
+                </div>
+                <span
+                  className="text-[10px] font-medium shrink-0"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {formatRelativeTime(ev.ts)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div
+        className="pt-3 border-t text-[11px] font-medium flex items-center justify-between"
+        style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+      >
+        <span>Append-only Event Store</span>
+        <span>SHA-256 HMAC</span>
       </div>
     </div>
   );

@@ -9,50 +9,58 @@ import { Activity, BookOpen, Settings } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { data: health } = useSWR("/health", fetcher, { refreshInterval: 5000 });
-
-  const navItems = [
-    { href: "/", label: "Command Center", icon: Activity },
-    { href: "/ledger", label: "Two-Arm Ledger", icon: BookOpen },
-    { href: "/admin", label: "Admin Console", icon: Settings },
-  ];
+  const { data: health } = useSWR("/health", fetcher, {
+    refreshInterval: 5000,
+    errorRetryInterval: 8000,
+    shouldRetryOnError: true,
+  });
 
   const isHealthy = health?.status === "ok";
 
+  const links = [
+    { href: "/", label: "Command Center", icon: Activity },
+    { href: "/ledger", label: "Ledger", icon: BookOpen },
+    { href: "/admin", label: "Admin", icon: Settings },
+  ];
+
   return (
-    <header className="sticky top-0 z-50 custom-surface border-b backdrop-blur-md px-6 py-3.5 transition-colors duration-200">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <header
+      className="sticky top-0 z-50 border-b px-6 py-3.5"
+      style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
+    >
+      <div className="max-w-[1360px] mx-auto flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg bg-gradient-to-br from-[#b0cde6] to-[#a290b7] dark:from-[#a56f63] dark:to-[#464858] text-slate-900 dark:text-white shadow-sm transition-transform group-hover:scale-105">
-              S
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 font-bold tracking-tight text-lg leading-tight">
-                SENTIO
-                <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold uppercase bg-[#a290b7]/20 text-[#a290b7] dark:bg-[#a56f63]/30 dark:text-[#f8fafc]">
-                  v1
-                </span>
-              </div>
-              <p className="text-[10px] text-muted tracking-wider uppercase font-medium">
-                Autonomous Revenue Recovery
-              </p>
-            </div>
+          <Link href="/" className="flex items-center gap-2 group">
+            <span
+              className="font-extrabold text-lg tracking-wider"
+              style={{ color: "var(--text-primary)" }}
+            >
+              SENTIO
+            </span>
+            <span
+              className="pill text-[9px]"
+              style={{ background: "var(--bg-surface)", color: "var(--text-muted)" }}
+            >
+              v1.0
+            </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1.5">
-            {navItems.map((item) => {
+          <nav className="flex items-center gap-1">
+            {links.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+              const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
-                    isActive
-                      ? "bg-white/60 dark:bg-white/10 text-slate-900 dark:text-white shadow-sm font-semibold"
-                      : "text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/5"
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-md text-[13px] font-semibold transition-all ${
+                    active ? "shadow-sm" : ""
                   }`}
+                  style={{
+                    color: active ? "var(--text-primary)" : "var(--text-muted)",
+                    background: active ? "var(--bg-surface)" : "transparent",
+                    border: active ? "1px solid var(--border-color)" : "1px solid transparent",
+                  }}
                 >
                   <Icon className="w-4 h-4" />
                   {item.label}
@@ -62,21 +70,21 @@ export function Navbar() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium custom-card">
-            {isHealthy ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-emerald-700 dark:text-emerald-400">Spine Live</span>
-              </>
-            ) : (
-              <>
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                <span className="text-amber-700 dark:text-amber-400">Connecting...</span>
-              </>
-            )}
+        <div className="flex items-center gap-3.5">
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold"
+            style={{
+              background: isHealthy ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
+              color: isHealthy ? "#059669" : "#d97706",
+              border: isHealthy ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(245,158,11,0.3)",
+            }}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${isHealthy ? "bg-emerald-500" : "bg-amber-500"}`}
+              style={isHealthy ? { animation: "pulse 2s ease-in-out infinite" } : {}}
+            />
+            {isHealthy ? "Spine Live" : "Connecting..."}
           </div>
-
           <ThemeToggle />
         </div>
       </div>
