@@ -7,8 +7,12 @@ from pydantic import BaseModel, Field
 from app.core.clock import now_utc
 
 
+def _generate_receipt_id() -> str:
+    return f"rcpt_{str(ulid.ULID()).lower()}"
+
+
 class PolicyReceipt(BaseModel):
-    receipt_id: str = Field(default_factory=lambda: f"rcpt_{str(ulid.ULID()).lower()}")
+    receipt_id: str = Field(default_factory=_generate_receipt_id)
     case_id: str
     intervention_id: str
     verdict: str

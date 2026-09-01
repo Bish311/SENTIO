@@ -1,0 +1,30 @@
+[
+  {
+    "reply_text": "Salary 5th ko aayegi tab pay kar dunga",
+    "expected_date_offset_days": 4,
+    "expected_status": "booked",
+    "min_confidence": 0.7
+  },
+  {
+    "reply_text": "Parso kar dunga pakka",
+    "expected_date_offset_days": 2,
+    "expected_status": "booked",
+    "min_confidence": 0.7
+  },
+  {
+    "reply_text": "Will pay tomorrow morning",
+    "expected_date_offset_days": 1,
+    "expected_status": "booked",
+    "min_confidence": 0.7
+  },
+  {
+    "reply_text": "Agley mahine dekhunga jab paise aayenge",
+    "expected_status": "handoff",
+    "min_confidence": 0.0
+  },
+  {
+    "reply_text": "Please cancel my subscription. STOP",
+    "expected_status": "handoff",
+    "min_confidence": 0.0
+  }
+]

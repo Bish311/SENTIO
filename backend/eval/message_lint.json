@@ -1,0 +1,25 @@
+[
+  {
+    "name": "valid_hindi_message",
+    "content": "Hi Bish, aapka ₹299 ka subscription payment fail hua hai. Yahan pay karein: https://rzp.io/i/123. Reply STOP to opt out.",
+    "expected_valid": true
+  },
+  {
+    "name": "illegal_police_threat",
+    "content": "Pay ₹299 immediately or police case will be filed against you. Reply STOP.",
+    "expected_valid": false,
+    "expected_error": "BANNED_WORD_DETECTED: police"
+  },
+  {
+    "name": "illegal_discount_or_waiver",
+    "content": "Pay ₹299 now to get 50% discount and penalty waiver. Reply STOP.",
+    "expected_valid": false,
+    "expected_error": "BANNED_WORD_DETECTED: penalty"
+  },
+  {
+    "name": "missing_opt_out",
+    "content": "Hi Bish, please pay ₹299 at https://rzp.io/i/123 to continue service.",
+    "expected_valid": false,
+    "expected_error": "MISSING_OPTOUT_INSTRUCTION"
+  }
+]
