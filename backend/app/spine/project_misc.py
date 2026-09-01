@@ -1,5 +1,6 @@
 from datetime import date
 
+import ulid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,7 +8,7 @@ from app.models import Case, Customer, Promise, Subscription
 
 
 async def project_ptp_booked(session: AsyncSession, payload: dict, event_id: int) -> None:
-    promise_id = payload.get("promise_id")
+    promise_id = payload.get("promise_id") or f"ptp_{str(ulid.ULID()).lower()}"
     result = await session.execute(select(Promise).where(Promise.id == promise_id))
     prom_row = result.scalar_one_or_none()
     if prom_row is None:
