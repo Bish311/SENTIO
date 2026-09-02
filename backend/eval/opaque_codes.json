@@ -1,0 +1,22 @@
+[
+  {
+    "decline_code": "ERR_ACCOUNT_RESTRICTED_EOD",
+    "description": "Account restricted due to daily debit velocity limit",
+    "expected_cause": "budget_burned"
+  },
+  {
+    "decline_code": "GATEWAY_TIMEOUT_INTERRUPT_09",
+    "description": "Connection dropped during 3DS challenge handshake",
+    "expected_cause": "friction"
+  },
+  {
+    "decline_code": "INSUFFICIENT_ATM_BALANCE_002",
+    "description": "Debit failed due to lack of ledger funds at cycle start",
+    "expected_cause": "cash_timing"
+  },
+  {
+    "decline_code": "INSTRUMENT_LOCKED_INVALID_CVV",
+    "description": "Card locked due to invalid expiry parameters",
+    "expected_cause": "dead_instrument"
+  }
+]
