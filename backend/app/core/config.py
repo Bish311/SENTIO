@@ -10,7 +10,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/sentio"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/sentio"
     RZP_KEY_ID: str = "rzp_test_placeholder"
     RZP_KEY_SECRET: str = "placeholder_secret"
     RZP_WEBHOOK_SECRET: str = "placeholder_webhook_secret"
