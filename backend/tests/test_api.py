@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+from app.core.config import settings
 from app.mirror.replay import build_payment_failed_payload
 
 
@@ -54,4 +55,26 @@ async def test_webhook_endpoint_invalid_signature(client: AsyncClient) -> None:
         "X-Razorpay-Signature": "invalid_sig_value",
     }
     response = await client.post("/webhooks/razorpay", content=payload_bytes, headers=headers)
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_admin_kill_switch_authorized(client: AsyncClient) -> None:
+    headers = {"X-Admin-Token": settings.ADMIN_TOKEN}
+    response = await client.post("/admin/kill-switch", json={"enabled": True}, headers=headers)
+    assert response.status_code == 200
+    assert response.json()["kill_switch_active"] is True
+
+    denials_resp = await client.get("/admin/policy-denials", headers=headers)
+    assert denials_resp.status_code == 200
+
+    export_resp = await client.get("/admin/events/export", headers=headers)
+    assert export_resp.status_code == 200
+    assert len(export_resp.json()) > 0
+
+
+@pytest.mark.asyncio
+async def test_admin_routes_unauthorized(client: AsyncClient) -> None:
+    headers = {"X-Admin-Token": "bad_token"}
+    response = await client.post("/admin/kill-switch", json={"enabled": True}, headers=headers)
     assert response.status_code == 401
