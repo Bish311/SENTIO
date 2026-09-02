@@ -43,7 +43,7 @@ async def create_batch_world(
             opted_out=False,
             sim_profile=persona,
         )
-        session.add(customer_row)
+        await session.merge(customer_row)
         created_customers = created_customers + 1
 
         price_paise = rng.choice(PRICE_POINTS_PAISE)
@@ -52,7 +52,7 @@ async def create_batch_world(
 
         for arm in ["agent", "baseline"]:
             sub_row = Subscription(
-                id=f"{sub_id}_{arm}",
+                id=f"{sub_id}_{arm}_{batch_id[-6:]}",
                 customer_id=cust_id,
                 plan_id=plan_id,
                 amount_paise=price_paise,
@@ -60,7 +60,7 @@ async def create_batch_world(
                 arm=arm,
                 batch_id=batch_id,
             )
-            session.add(sub_row)
+            await session.merge(sub_row)
             created_subscriptions = created_subscriptions + 1
 
     await session.flush()
