@@ -1,179 +1,232 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { CaseItem } from "@/lib/types";
-import { formatPaiseToRupees, formatRelativeTime } from "@/lib/format";
-import { ArrowUpRight, Clock, User } from "lucide-react";
+import { formatPaiseToRupees } from "@/lib/format";
+import {
+  ArrowUpRight,
+  Sparkles,
+  Filter,
+  Calendar,
+} from "lucide-react";
 
 interface PipelineBoardProps {
   cases: CaseItem[];
 }
 
-const COLUMNS = [
-  { id: "opened", label: "Opened", states: ["opened"], dot: "#f59e0b", badgeBg: "rgba(245,158,11,0.15)", badgeText: "#d97706" },
-  { id: "diagnosed", label: "Diagnosed", states: ["diagnosed"], dot: "#0ea5e9", badgeBg: "rgba(145,165,233,0.15)", badgeText: "#0284c7" },
-  { id: "in_recovery", label: "In Recovery", states: ["in_recovery"], dot: "#6366f1", badgeBg: "rgba(99,102,241,0.15)", badgeText: "#4f46e5" },
-  { id: "settled", label: "Settled", states: ["settled", "recovered"], dot: "#10b981", badgeBg: "rgba(16,185,129,0.15)", badgeText: "#059669" },
-  { id: "closed", label: "Closed / Halted", states: ["halted", "closed", "closed_lost"], dot: "#94a3b8", badgeBg: "rgba(148,163,184,0.15)", badgeText: "#64748b" },
-];
-
 export function PipelineBoard({ cases }: PipelineBoardProps) {
-  if (cases.length === 0) {
-    return (
-      <div className="card p-6 sm:p-7 h-full flex flex-col justify-between min-h-[460px]">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
-              Recovery Pipeline Board
-            </h2>
-            <span
-              className="pill"
-              style={{ background: "var(--bg-surface)", color: "var(--text-muted)" }}
-            >
-              0 Total Cases
-            </span>
-          </div>
-          <p className="text-xs mb-6 font-medium" style={{ color: "var(--text-muted)" }}>
-            Real-time state progression for active and completed cases across recovery ladders.
-          </p>
+  const [filterMode, setFilterMode] = useState<"all" | "t1_llm" | "matrix" | "ptp" | "settled">("all");
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
-            {COLUMNS.map((col) => (
-              <div
-                key={col.id}
-                className="surface p-5 flex flex-col items-center justify-center gap-2.5 min-h-[220px]"
-                style={{ border: "1px dashed var(--border-color)" }}
-              >
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full" style={{ background: col.dot }} />
-                  <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
-                    {col.label}
-                  </span>
-                </div>
-                <span className="text-2xl font-extrabold" style={{ color: "var(--text-muted)" }}>0</span>
-                <span className="text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>₹0 volume</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div
-          className="surface p-3.5 mt-6 text-center text-xs font-semibold"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          No active cases yet. Head to the <strong style={{ color: "var(--text-primary)" }}>Admin</strong> page to launch a seeded simulation batch.
-        </div>
-      </div>
-    );
-  }
+  const filteredCases = cases.filter((c) => {
+    if (filterMode === "all") return true;
+    const rc = (c.root_cause || "").toLowerCase();
+    const st = (c.state || "").toLowerCase();
+    if (filterMode === "t1_llm") {
+      return rc === "cash_timing" || rc === "friction" || rc === "other";
+    }
+    if (filterMode === "matrix") {
+      return rc === "transient" || rc === "dead_instrument" || rc === "budget_burned";
+    }
+    if (filterMode === "ptp") {
+      return rc === "cash_timing" || st === "in_recovery";
+    }
+    if (filterMode === "settled") {
+      return st === "settled" || st === "recovered";
+    }
+    return true;
+  });
 
   return (
-    <div className="card p-6 min-h-[460px] flex flex-col">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h2 className="text-base font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
-            Recovery Pipeline Board
-          </h2>
-          <p className="text-xs font-medium mt-0.5" style={{ color: "var(--text-muted)" }}>
-            {cases.length} total cases in active and historical lifecycles
-          </p>
+    <div className="card p-5 sm:p-6 flex flex-col gap-5 min-h-[500px]">
+      {/* 5-Engine Flow Visualizer Header */}
+      <div className="surface p-4 rounded-lg border flex flex-col gap-3" style={{ borderColor: "var(--border-color)" }}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <h2 className="text-sm font-bold tracking-tight text-white">
+              Autonomous Recovery Architecture Pipeline
+            </h2>
+          </div>
+          <span className="pill text-[10px] font-mono bg-indigo-500/20 text-indigo-300 font-semibold">
+            FAIL-CLOSED DETERMINISTIC GATING
+          </span>
         </div>
-        <span
-          className="pill"
-          style={{ background: "var(--bg-surface)", color: "var(--text-secondary)" }}
-        >
-          {cases.length} Cases
+
+        {/* The 5 Stages Flow */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs font-mono">
+          <div className="bg-zinc-900/60 p-2.5 rounded border border-zinc-800">
+            <span className="text-[10px] text-zinc-500 block">STAGE 1: SPINE</span>
+            <strong className="text-zinc-200 block text-[11px]">HMAC Ingest</strong>
+            <span className="text-[10px] text-emerald-400">SHA-256 Verified</span>
+          </div>
+
+          <div className="bg-zinc-900/60 p-2.5 rounded border border-zinc-800">
+            <span className="text-[10px] text-zinc-500 block">STAGE 2: LENS</span>
+            <strong className="text-zinc-200 block text-[11px]">Matrix vs T1 LLM</strong>
+            <span className="text-[10px] text-cyan-400">&ge;0.70 Conf Floor</span>
+          </div>
+
+          <div className="bg-zinc-900/60 p-2.5 rounded border border-zinc-800">
+            <span className="text-[10px] text-zinc-500 block">STAGE 3: GUARD</span>
+            <strong className="text-zinc-200 block text-[11px]">8 Policy Rules</strong>
+            <span className="text-[10px] text-amber-400">Signed Receipts</span>
+          </div>
+
+          <div className="bg-zinc-900/60 p-2.5 rounded border border-zinc-800">
+            <span className="text-[10px] text-zinc-500 block">STAGE 4: CHRONO</span>
+            <strong className="text-zinc-200 block text-[11px]">Temporal Lock</strong>
+            <span className="text-[10px] text-indigo-400">Quiet Hours/Payday</span>
+          </div>
+
+          <div className="bg-zinc-900/60 p-2.5 rounded border border-zinc-800 col-span-2 md:col-span-1">
+            <span className="text-[10px] text-zinc-500 block">STAGE 5: REACH</span>
+            <strong className="text-zinc-200 block text-[11px]">T2 Copy &amp; T3 PTP</strong>
+            <span className="text-[10px] text-emerald-400">Defensive Linter</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+          <span className="text-zinc-400 flex items-center gap-1">
+            <Filter className="w-3.5 h-3.5" /> Filter:
+          </span>
+          <button
+            onClick={() => setFilterMode("all")}
+            className={`px-2.5 py-1 rounded cursor-pointer transition-all ${
+              filterMode === "all" ? "bg-zinc-700 text-white font-bold" : "surface text-zinc-400 hover:text-white"
+            }`}
+          >
+            All Cases ({cases.length})
+          </button>
+          <button
+            onClick={() => setFilterMode("t1_llm")}
+            className={`px-2.5 py-1 rounded cursor-pointer transition-all ${
+              filterMode === "t1_llm" ? "bg-cyan-900/60 text-cyan-300 font-bold border border-cyan-700" : "surface text-zinc-400 hover:text-white"
+            }`}
+          >
+            T1 Neural LLM Path
+          </button>
+          <button
+            onClick={() => setFilterMode("matrix")}
+            className={`px-2.5 py-1 rounded cursor-pointer transition-all ${
+              filterMode === "matrix" ? "bg-emerald-900/60 text-emerald-300 font-bold border border-emerald-700" : "surface text-zinc-400 hover:text-white"
+            }`}
+          >
+            Matrix Fast-Path (2ms)
+          </button>
+          <button
+            onClick={() => setFilterMode("ptp")}
+            className={`px-2.5 py-1 rounded cursor-pointer transition-all ${
+              filterMode === "ptp" ? "bg-indigo-900/60 text-indigo-300 font-bold border border-indigo-700" : "surface text-zinc-400 hover:text-white"
+            }`}
+          >
+            T3 Payday Locked
+          </button>
+          <button
+            onClick={() => setFilterMode("settled")}
+            className={`px-2.5 py-1 rounded cursor-pointer transition-all ${
+              filterMode === "settled" ? "bg-emerald-600 text-white font-bold" : "surface text-zinc-400 hover:text-white"
+            }`}
+          >
+            Settled ({cases.filter((c) => ["settled", "recovered"].includes((c.state || "").toLowerCase())).length})
+          </button>
+        </div>
+
+        <span className="text-[11px] font-mono text-zinc-500">
+          Showing {filteredCases.length} of {cases.length} cases
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 flex-1">
-        {COLUMNS.map((col) => {
-          const items = cases.filter((c) => col.states.includes((c.state || "").toLowerCase()));
-          const totalPaise = items.reduce(
-            (acc, curr) => {
-              const s = (curr.state || "").toLowerCase();
-              return acc + (s === "settled" || s === "recovered" ? curr.recovered_paise : curr.amount_at_risk_paise);
-            },
-            0
-          );
+      {/* Case Cards Grid */}
+      {filteredCases.length === 0 ? (
+        <div className="surface p-12 text-center rounded border border-dashed text-zinc-400 text-xs" style={{ borderColor: "var(--border-color)" }}>
+          No cases match this architectural filter. Run a simulation from the Admin console.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filteredCases.map((c) => {
+            const isSettled = ["settled", "recovered"].includes((c.state || "").toLowerCase());
+            const isArmA = c.arm === "agent" || (c.arm || "").toLowerCase().includes("arm a");
+            const isT1 = ["cash_timing", "friction", "other"].includes((c.root_cause || "").toLowerCase());
 
-          return (
-            <div key={col.id} className="surface p-3 flex flex-col min-h-[320px]">
-              <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b" style={{ borderColor: "var(--border-color)" }}>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full" style={{ background: col.dot }} />
-                  <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-primary)" }}>
-                    {col.label}
+            return (
+              <Link
+                key={c.id}
+                href={`/cases/${c.id}`}
+                className="surface p-3.5 rounded border hover:border-zinc-500 transition-all flex flex-col justify-between gap-3 text-xs group"
+                style={{ borderColor: "var(--border-color)" }}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono text-[11px] text-zinc-400 group-hover:text-indigo-400 transition-colors">
+                      {c.id.slice(0, 18)}...
+                    </span>
+                    <span
+                      className={`pill text-[10px] font-mono font-bold ${
+                        isSettled
+                          ? "bg-emerald-500/20 text-emerald-400"
+                          : "bg-amber-500/20 text-amber-400"
+                      }`}
+                    >
+                      {c.state?.toUpperCase() || "ACTIVE"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-base font-extrabold font-mono text-white">
+                      {formatPaiseToRupees(isSettled ? c.recovered_paise : c.amount_at_risk_paise)}
+                    </span>
+                    <span
+                      className={`pill text-[10px] font-bold ${
+                        isArmA
+                          ? "bg-indigo-500/20 text-indigo-300"
+                          : "bg-zinc-800 text-zinc-400"
+                      }`}
+                    >
+                      {isArmA ? "Arm A (Sentio AI)" : "Arm B (Baseline)"}
+                    </span>
+                  </div>
+
+                  {/* Architectural Engine Tags */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    <span
+                      className={`pill text-[10px] font-mono ${
+                        isT1
+                          ? "bg-cyan-500/15 text-cyan-300 border border-cyan-800/60"
+                          : "bg-emerald-500/15 text-emerald-300 border border-emerald-800/60"
+                      }`}
+                    >
+                      <Sparkles className="w-2.5 h-2.5 inline mr-1" />
+                      {isT1 ? "T1 Neural LLM" : "Matrix Fast-Path"}
+                    </span>
+
+                    <span className="pill text-[10px] font-mono bg-zinc-800 text-zinc-300">
+                      Cause: <strong>{c.root_cause || "diagnosed"}</strong>
+                    </span>
+
+                    {c.root_cause === "cash_timing" && (
+                      <span className="pill text-[10px] font-mono bg-indigo-500/15 text-indigo-300">
+                        <Calendar className="w-2.5 h-2.5 inline mr-1" />
+                        Payday Lock
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] pt-2 border-t text-zinc-500 font-mono" style={{ borderColor: "var(--border-color)" }}>
+                  <span>Cust: {c.customer_id?.slice(0, 10) || "cust_..."}</span>
+                  <span className="flex items-center gap-1 text-zinc-400 group-hover:text-white transition-colors">
+                    Inspect Trace <ArrowUpRight className="w-3 h-3" />
                   </span>
                 </div>
-                <span
-                  className="pill text-[10px]"
-                  style={{ background: col.badgeBg, color: col.badgeText }}
-                >
-                  {items.length}
-                </span>
-              </div>
-
-              <div className="text-[11px] font-bold mb-2.5 px-1" style={{ color: "var(--text-muted)" }}>
-                Volume: {formatPaiseToRupees(totalPaise)}
-              </div>
-
-              <div className="flex-1 flex flex-col gap-2 overflow-y-auto max-h-[380px] pr-0.5">
-                {items.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center">
-                    <span className="text-xs italic font-medium" style={{ color: "var(--text-muted)" }}>No cases</span>
-                  </div>
-                ) : (
-                  items.map((c) => (
-                    <Link
-                      key={c.id}
-                      href={`/cases/${c.id}`}
-                      className="group p-3 rounded-md transition-all block border"
-                      style={{
-                        background: "var(--bg-card)",
-                        borderColor: "var(--border-color)",
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-mono font-bold truncate pr-1" style={{ color: "var(--text-primary)" }}>
-                          {c.id.slice(0, 12)}
-                        </span>
-                        <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 shrink-0 transition-opacity" style={{ color: "var(--text-primary)" }} />
-                      </div>
-
-                      <div className="flex items-center gap-1 text-[11px] font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
-                        <User className="w-3 h-3" />
-                        <span className="truncate">{c.customer_id}</span>
-                      </div>
-
-                      {c.root_cause && (
-                        <div className="mb-2">
-                          <span
-                            className="pill text-[9px]"
-                            style={{ background: "var(--bg-surface)", color: "var(--text-primary)" }}
-                          >
-                            {c.root_cause.replace(/_/g, " ")}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="pt-2 border-t flex items-center justify-between" style={{ borderColor: "var(--border-color)" }}>
-                        <span className="text-xs font-extrabold" style={{ color: "var(--text-primary)" }}>
-                          {formatPaiseToRupees(c.state === "settled" ? c.recovered_paise : c.amount_at_risk_paise)}
-                        </span>
-                        <span className="text-[10px] flex items-center gap-0.5 font-medium" style={{ color: "var(--text-muted)" }}>
-                          <Clock className="w-3 h-3" />
-                          {formatRelativeTime(c.opened_at)}
-                        </span>
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

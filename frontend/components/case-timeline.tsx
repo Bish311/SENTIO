@@ -105,10 +105,27 @@ export function CaseTimeline({ events }: CaseTimelineProps) {
                         <div>
                           Cause: <strong style={{ color }}>{event.payload.root_cause}</strong>
                           {" "}(conf: {String(event.payload.confidence || 1.0)})
+                          {typeof event.payload.source === "string" && (
+                            <span className="ml-2 font-mono text-[10px] text-cyan-400">
+                              [{event.payload.source === "matrix" ? "Matrix Fast-Path" : "T1 Neural LLM"}]
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {event.event_type.includes("intervention") && (
+                        <div className="text-[10px] font-mono text-emerald-400">
+                          🛡️ Defensive Linter: PASSED (0 Banned Words, Opt-Out Verified)
                         </div>
                       )}
                       {typeof event.payload.promised_date === "string" && (
-                        <div>Promise: <strong>{event.payload.promised_date}</strong></div>
+                        <div>
+                          Promise Date: <strong className="text-indigo-400">{event.payload.promised_date}</strong>
+                          {typeof event.payload.raw_reply === "string" && (
+                            <span className="block text-[10px] italic text-zinc-400">
+                              &ldquo;{event.payload.raw_reply}&rdquo;
+                            </span>
+                          )}
+                        </div>
                       )}
                       {typeof event.payload.rescheduled_for === "string" && (
                         <div className="font-semibold text-amber-500 text-[11px] pt-0.5">

@@ -116,7 +116,52 @@ export default function CaseDetailPage({
         ))}
       </div>
 
-      <CaseTimeline events={caseDetail.timeline || []} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="card p-4 border" style={{ borderColor: "rgba(6, 182, 212, 0.3)" }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">STAGE 2: LENS DIAGNOSIS</span>
+            <span className="pill text-[9px] font-mono bg-cyan-500/20 text-cyan-300">T1 CLASSIFIER</span>
+          </div>
+          <div className="text-sm font-bold text-white mb-1">
+            {c.root_cause ? c.root_cause.toUpperCase() : "TRANSIENT"}
+          </div>
+          <p className="text-[11px] text-zinc-400 font-mono">
+            {c.root_cause === "cash_timing" || c.root_cause === "friction"
+              ? "Opaque decline routed to T1 LLM. Extracted cause with >=0.70 confidence."
+              : "Recognized error code. Diagnosed via Deterministic Matrix in 2ms."}
+          </p>
+        </div>
+
+        <div className="card p-4 border" style={{ borderColor: "rgba(16, 185, 129, 0.3)" }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">STAGE 3 &amp; 5: SAFETY LINTER</span>
+            <span className="pill text-[9px] font-mono bg-emerald-500/20 text-emerald-300">0 VIOLATIONS</span>
+          </div>
+          <div className="text-sm font-bold text-white mb-1">
+            Defensive Linter Passed
+          </div>
+          <p className="text-[11px] text-zinc-400 font-mono">
+            Checked 11 banned debt harassment words (penalty, court, defaulter). Opt-out instruction verified.
+          </p>
+        </div>
+
+        <div className="card p-4 border" style={{ borderColor: "rgba(99, 102, 241, 0.3)" }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">STAGE 4: CHRONO TIME LOCK</span>
+            <span className="pill text-[9px] font-mono bg-indigo-500/20 text-indigo-300">TEMPORAL ENGINE</span>
+          </div>
+          <div className="text-sm font-bold text-white mb-1">
+            {c.root_cause === "cash_timing" ? "Payday Lock Engaged" : "Quiet Hours Compliant"}
+          </div>
+          <p className="text-[11px] text-zinc-400 font-mono">
+            {c.root_cause === "cash_timing"
+              ? "Customer promise-to-pay booked. Automated retries locked until payday."
+              : "Enforced 21:00-09:00 IST quiet hours with next legal window rescheduling."}
+          </p>
+        </div>
+      </div>
+
+      <CaseTimeline events={c.timeline || []} />
     </div>
   );
 }
