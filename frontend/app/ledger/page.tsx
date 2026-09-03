@@ -10,7 +10,7 @@ import { ArrowUpRight } from "lucide-react";
 
 export default function LedgerPage() {
   const { data: batchMetrics } = useSWR<BatchMetricsResponse>(
-    "/metrics/batch/batch_demo_001",
+    "/metrics/batch/latest",
     fetcher,
     { refreshInterval: 5000, errorRetryInterval: 8000 }
   );

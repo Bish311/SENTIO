@@ -26,13 +26,19 @@ export default function CommandCenterPage() {
   const caseList = cases || [];
 
   const recoveredPaise = caseList.reduce(
-    (acc, c) => acc + (c.outcome === "recovered" ? c.recovered_paise : 0),
+    (acc, c) => {
+      const isRec = (c.outcome || "").toLowerCase() === "recovered" || (c.state || "").toLowerCase() === "recovered";
+      return acc + (isRec ? c.recovered_paise : 0);
+    },
     0
   );
-  const activeCases = caseList.filter(
-    (c) => c.state === "opened" || c.state === "diagnosed" || c.state === "in_recovery"
+  const activeCases = caseList.filter((c) => {
+    const s = (c.state || "").toLowerCase();
+    return s === "opened" || s === "diagnosed" || s === "in_recovery";
+  }).length;
+  const recoveredCount = caseList.filter(
+    (c) => (c.outcome || "").toLowerCase() === "recovered" || (c.state || "").toLowerCase() === "recovered"
   ).length;
-  const recoveredCount = caseList.filter((c) => c.outcome === "recovered").length;
   const rate = caseList.length > 0 ? recoveredCount / caseList.length : 0;
 
   return (

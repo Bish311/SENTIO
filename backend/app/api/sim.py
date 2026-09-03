@@ -1,10 +1,11 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
-from app.mirror.batch_gen import create_batch_world
 from app.models import Case, PaymentLink
 from app.spine.ingest import append_event
 from app.spine.projector import project_event
@@ -31,13 +32,19 @@ class LinkActionRequest(BaseModel):
 async def create_simulation_batch(
     request: BatchCreateRequest,
     session: AsyncSession = Depends(get_db),
-) -> dict[str, str | int]:
-    result = await create_batch_world(
+) -> dict[str, Any]:
+    from scripts.experiment_runner import run_experiment_batch
+
+    result = await run_experiment_batch(
         session=session,
         seed=request.seed,
         n_customers=request.n,
     )
-    return result
+    return {
+        "batch_id": result["batch_id"],
+        "customers_count": request.n,
+        "subscriptions_count": request.n * 2,
+    }
 
 
 @router.post("/customer-reply", status_code=status.HTTP_202_ACCEPTED)

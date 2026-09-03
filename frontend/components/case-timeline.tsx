@@ -110,6 +110,16 @@ export function CaseTimeline({ events }: CaseTimelineProps) {
                       {typeof event.payload.promised_date === "string" && (
                         <div>Promise: <strong>{event.payload.promised_date}</strong></div>
                       )}
+                      {typeof event.payload.rescheduled_for === "string" && (
+                        <div className="font-semibold text-amber-500 text-[11px] pt-0.5">
+                          ⏳ Paused until: {String(event.payload.rescheduled_for)}
+                        </div>
+                      )}
+                      {typeof event.payload.reason === "string" && (
+                        <div className="text-[10px] italic" style={{ color: "var(--text-muted)" }}>
+                          {String(event.payload.reason)}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

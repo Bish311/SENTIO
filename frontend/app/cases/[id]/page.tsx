@@ -48,13 +48,16 @@ export default function CaseDetailPage({
     );
   }
 
-  const isRecovered = caseDetail.outcome === "recovered" || caseDetail.state === "settled";
+  const raw = caseDetail as unknown as { case?: CaseDetail } & CaseDetail;
+  const c = raw.case ? { ...raw.case, timeline: raw.timeline || caseDetail.timeline } : caseDetail;
+
+  const isRecovered = (c.outcome || "").toLowerCase() === "recovered" || (c.state || "").toLowerCase() === "recovered" || (c.state || "").toLowerCase() === "settled";
 
   const infoItems = [
-    { label: "Customer ID", value: caseDetail.customer_id },
-    { label: "Subscription ID", value: caseDetail.subscription_id },
-    { label: "Root Cause", value: caseDetail.root_cause ? caseDetail.root_cause.replace(/_/g, " ") : "Pending Diagnosis" },
-    { label: "Experiment Arm", value: caseDetail.arm === "agent" ? "Arm A (Sentio AI)" : "Arm B (Baseline)" },
+    { label: "Customer ID", value: c.customer_id },
+    { label: "Subscription ID", value: c.subscription_id },
+    { label: "Root Cause", value: c.root_cause ? c.root_cause.replace(/_/g, " ") : "Pending Diagnosis" },
+    { label: "Experiment Arm", value: c.arm === "agent" ? "Arm A (Sentio AI)" : "Arm B (Baseline)" },
   ];
 
   return (
@@ -71,7 +74,7 @@ export default function CaseDetailPage({
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="text-lg sm:text-xl font-bold font-mono" style={{ color: "var(--text-primary)" }}>
-                {caseDetail.id}
+                {c.id}
               </h1>
               <span
                 className="pill text-xs"
@@ -81,11 +84,11 @@ export default function CaseDetailPage({
                   border: isRecovered ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(245,158,11,0.3)",
                 }}
               >
-                {caseDetail.state}
+                {c.state}
               </span>
             </div>
             <p className="text-xs font-medium mt-0.5" style={{ color: "var(--text-muted)" }}>
-              Opened {formatISTDateTime(caseDetail.opened_at)}
+              Opened {formatISTDateTime(c.opened_at)}
             </p>
           </div>
         </div>
@@ -95,7 +98,7 @@ export default function CaseDetailPage({
             {isRecovered ? "Recovered Amount" : "Amount At Risk"}
           </span>
           <span className="text-xl font-extrabold font-mono" style={{ color: isRecovered ? "#10b981" : "var(--text-primary)" }}>
-            {formatPaiseToRupees(isRecovered ? caseDetail.recovered_paise : caseDetail.amount_at_risk_paise)}
+            {formatPaiseToRupees(isRecovered ? c.recovered_paise : c.amount_at_risk_paise)}
           </span>
         </div>
       </div>

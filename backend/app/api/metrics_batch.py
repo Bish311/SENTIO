@@ -19,6 +19,19 @@ async def get_batch_metrics(
     result = await session.execute(query)
     cases = result.scalars().all()
 
+    if batch_id == "latest" or len(cases) == 0:
+        latest_q = (
+            select(Case.batch_id)
+            .where(Case.batch_id.isnot(None))
+            .order_by(Case.opened_at.desc())
+            .limit(1)
+        )
+        latest_id = (await session.execute(latest_q)).scalar_one_or_none()
+        if latest_id is not None:
+            batch_id = latest_id
+            cases_q = select(Case).where(Case.batch_id == batch_id)
+            cases = (await session.execute(cases_q)).scalars().all()
+
     denials_query = select(Event).where(Event.event_type == "policy.denied")
     denials_res = await session.execute(denials_query)
     all_denials = denials_res.scalars().all()
