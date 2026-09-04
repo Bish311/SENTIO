@@ -24,7 +24,7 @@ async def run_agent_case(
     batch_id: str,
 ) -> None:
     root_cause, confidence, _, _ = await diagnose_payment_failure(
-        session, case_id=case_obj.id, decline_code=decline_code
+        session, case_id=case_obj.id, decline_code=decline_code, force_llm=False
     )
     ladder_steps = LADDERS.get(root_cause, LADDERS["other"])
 

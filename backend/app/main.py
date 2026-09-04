@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (
     admin,
+    admin_db,
     cases_detail,
     cases_list,
     events_recent,
@@ -49,6 +50,7 @@ def create_application() -> FastAPI:
     application.include_router(metrics_ledger.router)
     application.include_router(events_recent.router)
     application.include_router(admin.router)
+    application.include_router(admin_db.router)
     return application
 
 

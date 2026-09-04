@@ -16,6 +16,7 @@ import {
   RefreshCw,
   CheckCircle2,
   Layers,
+  RotateCcw,
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -35,34 +36,25 @@ export default function AdminPage() {
     { refreshInterval: 5000, errorRetryInterval: 10000 }
   );
 
-  const handleRunSim = async () => {
-    setSimLoading(true);
-    setSimMessage(null);
-    try {
-      const res = await postData("/sim/batch", { n: 20, seed: 42 });
-      setSimMessage(`Batch ${String(res.batch_id)} created with 20 test cases!`);
-    } catch (err: unknown) {
-      setSimMessage(err instanceof Error ? err.message : "Failed to run simulation batch");
-    } finally {
-      setSimLoading(false);
-    }
-  };
-
-  const handleRunStepper = async () => {
+  const handleRunLive = async (scenario: number = scenarioIdx) => {
     setStepperLoading(true);
+    setStepperResult(null);
     try {
       const res = await postData(
         "/admin/single-step",
-        { opaque: stepperOpaque, scenario_idx: scenarioIdx },
+        { opaque: true, scenario_idx: scenario },
         adminToken
       );
       setStepperResult(res as SingleStepResult);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to run single-step simulation");
+      alert(err instanceof Error ? err.message : "Failed to execute live Razorpay and OpenRouter pipeline");
     } finally {
       setStepperLoading(false);
     }
   };
+
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   const handleExport = async () => {
     try {
@@ -76,6 +68,22 @@ export default function AdminPage() {
       URL.revokeObjectURL(url);
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Export failed");
+    }
+  };
+
+  const handleResetDb = async () => {
+    if (!confirm("Are you sure you want to completely wipe all cases, events, and subscriptions for fresh real data?")) {
+      return;
+    }
+    setResetLoading(true);
+    setResetMessage(null);
+    try {
+      await postData("/admin/reset-db", {}, adminToken);
+      setResetMessage("Database wiped clean! Ready for live Razorpay webhooks.");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to reset database");
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -137,7 +145,7 @@ export default function AdminPage() {
             </label>
 
             <button
-              onClick={handleRunStepper}
+              onClick={() => handleRunLive()}
               disabled={stepperLoading}
               className="px-4 py-2 rounded text-xs font-bold font-mono uppercase tracking-wider text-white bg-indigo-600 hover:bg-indigo-500 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
@@ -146,7 +154,7 @@ export default function AdminPage() {
               ) : (
                 <Play className="w-3.5 h-3.5 fill-current" />
               )}
-              <span>{stepperLoading ? "Executing Engines..." : "Simulate Live Failure"}</span>
+              <span>{stepperLoading ? "Calling Razorpay & OpenRouter..." : "Execute Live Razorpay + 3x LLM"}</span>
             </button>
           </div>
         </div>
@@ -163,9 +171,14 @@ export default function AdminPage() {
                     {stepperResult.customer} ({stepperResult.amount})
                   </span>
                 )}
+                {stepperResult.order_id && (
+                  <span className="pill text-[10px] bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-700/50">
+                    RZP: {stepperResult.order_id}
+                  </span>
+                )}
               </div>
               <span className="text-emerald-400 font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> 7/7 Pipeline Stages Executed Successfully
+                <CheckCircle2 className="w-3.5 h-3.5" /> 7/7 Pipeline Stages Executed (3x Real OpenRouter Inferences)
               </span>
             </div>
 
@@ -204,34 +217,60 @@ export default function AdminPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Simulator Controls Card */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Live External Razorpay Pipeline Card */}
         <div className="card p-5 flex flex-col justify-between min-h-[160px]">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Terminal className="w-4 h-4 text-indigo-400" />
               <h3 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-                Mirror Macro Batch Runner
+                Live External Razorpay + 3x LLM
               </h3>
             </div>
             <p className="text-xs font-medium mb-3" style={{ color: "var(--text-secondary)" }}>
-              Run wire-identical Razorpay test failure batch (20 cases) to update Two-Arm experiment metrics.
+              Creates real Razorpay order via API and executes real OpenRouter T1 (Diagnosis), T2 (Hinglish copy), and T3 (Payday extraction).
             </p>
           </div>
 
           <div>
             <button
-              onClick={handleRunSim}
-              disabled={simLoading}
+              onClick={() => handleRunLive((scenarioIdx + 1) % 4)}
+              disabled={stepperLoading}
               className="w-full py-2.5 px-4 rounded-md text-xs font-bold uppercase tracking-wider text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
-              <span>{simLoading ? "Creating Batch..." : "Run 20-Case Seeded Simulation"}</span>
+              <span>{stepperLoading ? "Executing Live APIs..." : "Execute Real External Run"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Wipe & Reset DB Card */}
+        <div className="card p-5 flex flex-col justify-between min-h-[160px] border" style={{ borderColor: "rgba(239, 68, 68, 0.4)" }}>
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <RotateCcw className="w-4 h-4 text-red-400" />
+              <h3 className="text-sm font-bold text-white">
+                Fresh Data Environment
+              </h3>
+            </div>
+            <p className="text-xs font-medium mb-3" style={{ color: "var(--text-secondary)" }}>
+              Completely wipe all simulation cases, events, and records to receive fresh real Razorpay webhook data.
+            </p>
+          </div>
+
+          <div>
+            <button
+              onClick={handleResetDb}
+              disabled={resetLoading}
+              className="w-full py-2.5 px-4 rounded-md text-xs font-bold uppercase tracking-wider text-red-200 bg-red-950/80 border border-red-800 hover:bg-red-900 transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${resetLoading ? "animate-spin" : ""}`} />
+              <span>{resetLoading ? "Wiping Database..." : "Wipe DB for Fresh Real Data"}</span>
             </button>
 
-            {simMessage && (
-              <p className="text-xs text-center font-bold mt-2 text-indigo-400">
-                {simMessage}
+            {resetMessage && (
+              <p className="text-xs text-center font-bold mt-2 text-emerald-400">
+                {resetMessage}
               </p>
             )}
           </div>

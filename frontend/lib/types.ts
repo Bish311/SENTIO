@@ -115,6 +115,7 @@ export interface SingleStepResult {
   batch_id: string;
   customer?: string;
   amount?: string;
+  order_id?: string;
   steps: StepItem[];
 }
 

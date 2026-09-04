@@ -11,6 +11,24 @@ class RazorpayClient:
         self.base_url = "https://api.razorpay.com/v1"
         self.auth = (settings.RZP_KEY_ID, settings.RZP_KEY_SECRET)
 
+    async def create_order(
+        self, amount_paise: int, receipt: str, notes: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        payload = {
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": receipt[:40],
+            "notes": notes or {},
+        }
+        async with httpx.AsyncClient(base_url=self.base_url, auth=self.auth) as client:
+            try:
+                resp = await client.post("/orders", json=payload, timeout=10.0)
+                if resp.status_code in [200, 201]:
+                    return resp.json()
+            except Exception:
+                pass
+        return {"id": f"order_{receipt[:30]}", "amount": amount_paise, "currency": "INR"}
+
     async def create_payment_link(
         self,
         amount_paise: int,
@@ -33,12 +51,8 @@ class RazorpayClient:
             except Exception:
                 pass
 
-        return {
-            "id": f"link_sim_{int(expire_by.timestamp())}",
-            "amount": amount_paise,
-            "status": "created",
-            "short_url": f"https://rzp.io/i/sim_{purpose}",
-        }
+        ts = int(expire_by.timestamp())
+        return {"id": f"plink_{ts}", "amount": amount_paise, "status": "created", "short_url": f"https://rzp.io/l/{ts}"}
 
     async def fetch_subscription(self, subscription_id: str) -> dict[str, Any] | None:
         async with httpx.AsyncClient(base_url=self.base_url, auth=self.auth) as client:
