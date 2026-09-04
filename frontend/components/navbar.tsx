@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import useSWR from "swr";
 import { fetcher } from "@/lib/api";
 import { ThemeToggle } from "./theme-toggle";
-import { Activity, BookOpen, Settings } from "lucide-react";
+import { Activity, Settings } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -19,7 +19,6 @@ export function Navbar() {
 
   const links = [
     { href: "/", label: "Command Center", icon: Activity },
-    { href: "/ledger", label: "Ledger", icon: BookOpen },
     { href: "/admin", label: "Admin", icon: Settings },
   ];
 

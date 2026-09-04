@@ -4,6 +4,7 @@ import ulid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.chrono.timing import calculate_next_legal_window
 from app.core.clock import now_utc
 from app.guard.engine import evaluate_proposal
 from app.models import Case, Subscription
@@ -22,13 +23,14 @@ async def run_prevention_sweep(session: AsyncSession) -> dict[str, Any]:
 
     prevented_count = 0
     now_dt = now_utc()
+    legal_win = calculate_next_legal_window(now_dt)
 
     for sub in subs:
         existing_case = await session.execute(
             select(Case)
             .where(Case.subscription_id == sub.id)
             .where(Case.kind == "prevention")
-            .where(Case.state.in_(["DETECTED", "INTERVENING"]))
+            .where(Case.state.in_(["DETECTED", "INTERVENING", "closed", "settled"]))
         )
         if existing_case.scalar_one_or_none() is not None:
             continue
@@ -60,8 +62,9 @@ async def run_prevention_sweep(session: AsyncSession) -> dict[str, Any]:
             action_type="update_card_link",
             proposed_paise=sub.amount_paise,
             debt_paise=sub.amount_paise,
-            proposed_time_utc=now_dt,
+            proposed_time_utc=legal_win,
             confidence=1.0,
+            customer_opted_out=False,
         )
 
         if receipt.verdict == "ALLOW":

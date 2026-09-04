@@ -5,11 +5,13 @@ import useSWR from "swr";
 import { fetcher, postData } from "@/lib/api";
 import { CaseDetail, CaseItem } from "@/lib/types";
 import { TransactionFlowchart } from "@/components/transaction-flowchart";
+import { PrecautionFlowchart } from "@/components/precaution-flowchart";
 import { formatPaiseToRupees } from "@/lib/format";
 import Link from "next/link";
-import { Play, RefreshCw, Layers, ArrowRight, ExternalLink } from "lucide-react";
+import { Play, RefreshCw, Zap, ShieldAlert, ExternalLink, ShieldCheck } from "lucide-react";
 
 export default function CommandCenterPage() {
+  const [activeMode, setActiveMode] = useState<"recovery" | "precaution">("recovery");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [triggerLoading, setTriggerLoading] = useState(false);
 
@@ -53,11 +55,11 @@ export default function CommandCenterPage() {
   const handleRunFreshRazorpay = async () => {
     setTriggerLoading(true);
     try {
-      const res = await postData(
+      const res = (await postData(
         "/admin/single-step",
         { opaque: true, scenario_idx: Math.floor(Math.random() * 10) },
         "dev-admin-secret-2026"
-      ) as { case_id: string };
+      )) as { case_id: string };
       await mutateCases();
       if (res?.case_id) {
         setSelectedCaseId(res.case_id);
@@ -87,69 +89,85 @@ export default function CommandCenterPage() {
             Command Center
           </h1>
           <p className="text-xs font-mono text-zinc-400 mt-0.5">
-            Payment reliability &amp; autonomous revenue recovery pipeline &mdash; live from external Razorpay APIs.
+            Payment reliability &amp; revenue protection pipeline &mdash; live from Razorpay APIs.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {caseList.length > 1 && (
-            <div className="flex items-center gap-1.5 bg-black/60 border border-zinc-800 rounded px-2 py-1">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase">Case:</span>
-              <select
-                value={currentCase?.id || ""}
-                onChange={(e) => setSelectedCaseId(e.target.value)}
-                className="bg-transparent text-zinc-200 text-xs font-mono focus:outline-none cursor-pointer"
-              >
-                {caseList.map((c) => (
-                  <option key={c.id} value={c.id} className="bg-zinc-900 text-white">
-                    {c.id.slice(0, 18)}... &middot; {formatPaiseToRupees(c.amount_at_risk_paise)} &middot; {(c.root_cause || c.state).toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Mode Switcher: Precaution vs Active Recovery */}
+          <div className="flex items-center gap-1 bg-black/60 p-1 rounded border border-zinc-800">
+            <button
+              onClick={() => setActiveMode("recovery")}
+              className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                activeMode === "recovery"
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200 border border-transparent"
+              }`}
+            >
+              Active Recovery (Cure)
+            </button>
+            <button
+              onClick={() => setActiveMode("precaution")}
+              className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeMode === "precaution"
+                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200 border border-transparent"
+              }`}
+            >
+              <Zap className="w-3 h-3 text-emerald-400" />
+              <span>Precaution Engine (Pulse)</span>
+            </button>
+          </div>
+
+          {activeMode === "recovery" && (
+            <button
+              onClick={handleRunFreshRazorpay}
+              disabled={triggerLoading}
+              className="px-3.5 py-1.5 rounded text-xs font-mono font-bold uppercase tracking-wider text-white bg-amber-600/90 hover:bg-amber-600 active:bg-amber-700 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 border border-amber-500/40"
+            >
+              {triggerLoading ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Play className="w-3 h-3 fill-current" />
+              )}
+              <span>{triggerLoading ? "Invoking Razorpay & 3x LLM..." : "Execute Live Razorpay + 3x LLM"}</span>
+            </button>
           )}
-
-          <button
-            onClick={handleRunFreshRazorpay}
-            disabled={triggerLoading}
-            className="px-3.5 py-1.5 rounded text-xs font-mono font-bold uppercase tracking-wider text-white bg-amber-600/90 hover:bg-amber-600 active:bg-amber-700 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 border border-amber-500/40"
-          >
-            {triggerLoading ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Play className="w-3 h-3 fill-current" />
-            )}
-            <span>{triggerLoading ? "Invoking Razorpay & 3x LLM..." : "Execute Live Razorpay + 3x LLM"}</span>
-          </button>
         </div>
       </div>
 
-      {/* 4 Minimal Metric Tiles matching personal/phs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-        <div className="p-3 rounded bg-[#0d0e12] border border-zinc-800/80">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">Recoverable Revenue</span>
-          <span className="text-base font-bold text-white block mt-0.5">{formatPaiseToRupees(atRiskPaise)}</span>
-          <span className="text-[10px] text-zinc-500">Live test exposure</span>
-        </div>
-        <div className="p-3 rounded bg-[#0d0e12] border border-zinc-800/80">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">Recovered Revenue</span>
-          <span className="text-base font-bold text-emerald-400 block mt-0.5">{formatPaiseToRupees(recoveredPaise)}</span>
-          <span className="text-[10px] text-zinc-500">Credited to Ledger</span>
-        </div>
-        <div className="p-3 rounded bg-[#0d0e12] border border-zinc-800/80">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">Recovery Rate</span>
-          <span className="text-base font-bold text-indigo-300 block mt-0.5">{rate.toFixed(1)}%</span>
-          <span className="text-[10px] text-zinc-500">{recoveredCount} of {caseList.length} cases</span>
-        </div>
-        <div className="p-3 rounded bg-[#0d0e12] border border-zinc-800/80">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">Active In Recovery</span>
-          <span className="text-base font-bold text-amber-400 block mt-0.5">{activeCases}</span>
-          <span className="text-[10px] text-zinc-500">Temporal payday locks</span>
-        </div>
-      </div>
+      {/* Case selector strip when in Active Recovery Mode */}
+      {activeMode === "recovery" && caseList.length > 1 && (
+        <div className="flex items-center justify-between gap-3 p-2.5 rounded bg-[#0d0e12] border border-zinc-800/80 text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <span className="text-zinc-500 uppercase text-[10px]">Select Active Transaction:</span>
+            <select
+              value={currentCase?.id || ""}
+              onChange={(e) => setSelectedCaseId(e.target.value)}
+              className="bg-black/60 border border-zinc-800 text-zinc-200 rounded px-2 py-1 font-mono focus:outline-none cursor-pointer"
+            >
+              {caseList.map((c) => (
+                <option key={c.id} value={c.id} className="bg-zinc-900 text-white">
+                  {c.id} &middot; {formatPaiseToRupees(c.amount_at_risk_paise)} &middot; {(c.root_cause || c.state).toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      {/* Main Flowchart or Empty State */}
-      {currentCase && currentCaseDetail ? (
+          <div className="flex items-center gap-4 text-[11px] text-zinc-400">
+            <span>Recovered: <strong className="text-emerald-400">{formatPaiseToRupees(recoveredPaise)}</strong></span>
+            <span>At Risk: <strong className="text-amber-400">{formatPaiseToRupees(atRiskPaise)}</strong></span>
+            <span>Rate: <strong className="text-indigo-300">{rate.toFixed(1)}%</strong></span>
+          </div>
+        </div>
+      )}
+
+      {/* Mode View: Precaution Flowchart vs Active Recovery Flowchart */}
+      {activeMode === "precaution" ? (
+        <div className="p-4 rounded border bg-[#090a0d]" style={{ borderColor: "#1e2026" }}>
+          <PrecautionFlowchart />
+        </div>
+      ) : currentCase && currentCaseDetail ? (
         <div className="p-4 rounded border bg-[#090a0d]" style={{ borderColor: "#1e2026" }}>
           <TransactionFlowchart caseDetail={currentCaseDetail} />
         </div>
@@ -183,12 +201,8 @@ export default function CommandCenterPage() {
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t text-[11px] font-mono text-zinc-600" style={{ borderColor: "#1e2026" }}>
         <span>AI PROPOSES &middot; POLICY DECIDES &middot; CRYPTOGRAPHICALLY SIGNED RECEIPTS</span>
         <div className="flex items-center gap-3">
-          <Link href="/ledger" className="hover:text-zinc-400 flex items-center gap-1">
-            <span>Ledger</span>
-            <ExternalLink className="w-3 h-3" />
-          </Link>
           <Link href="/admin" className="hover:text-zinc-400 flex items-center gap-1">
-            <span>Admin</span>
+            <span>Admin &amp; Policy Console</span>
             <ExternalLink className="w-3 h-3" />
           </Link>
         </div>
