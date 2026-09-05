@@ -28,6 +28,8 @@ class KillSwitchRequest(BaseModel):
 class SingleStepRequest(BaseModel):
     opaque: bool = Field(default=True)
     scenario_idx: int = Field(default=0)
+    custom_reply: str | None = None
+    custom_amount: int | None = None
 
 
 @router.post("/kill-switch")
@@ -58,13 +60,7 @@ async def get_policy_denials(
 ) -> list[dict[str, Any]]:
     q = select(Event).where(Event.event_type == "policy.denied")
     events = (await session.execute(q.order_by(Event.id.desc()).limit(100))).scalars().all()
-    out: list[dict[str, Any]] = []
-    for ev in events:
-        out.append({
-            "event_id": ev.id, "case_id": ev.case_id, "ts": ev.ts.isoformat(),
-            "receipt": ev.payload.get("receipt", {}),
-        })
-    return out
+    return [{"event_id": e.id, "case_id": e.case_id, "ts": e.ts.isoformat(), "receipt": e.payload.get("receipt", {})} for e in events]
 
 
 @router.get("/system-verify")
@@ -79,7 +75,7 @@ async def simulate_single_step(
     session: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     return await run_live_single_step_case(
-        session, opaque=body.opaque, scenario_idx=body.scenario_idx
+        session, body.opaque, body.scenario_idx, body.custom_reply, body.custom_amount
     )
 
 
@@ -90,10 +86,4 @@ async def export_events(
 ) -> list[dict[str, Any]]:
     q = select(Event).order_by(Event.id.asc()).limit(1000)
     events = (await session.execute(q)).scalars().all()
-    exported: list[dict[str, Any]] = []
-    for e in events:
-        exported.append({
-            "id": e.id, "ts": e.ts.isoformat(), "event_type": e.event_type,
-            "actor": e.actor, "case_id": e.case_id, "payload": e.payload,
-        })
-    return exported
+    return [{"id": e.id, "ts": e.ts.isoformat(), "event_type": e.event_type, "actor": e.actor, "case_id": e.case_id, "payload": e.payload} for e in events]

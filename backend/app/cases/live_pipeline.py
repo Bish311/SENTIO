@@ -14,12 +14,14 @@ from app.spine.ingest import append_event
 from app.spine.projector import project_event
 
 async def ensure_live_subscription(
-    session: AsyncSession, sub_id: str, cust_id: str, amt: int, email: str, phone: str
+    session: AsyncSession, sub_id: str, cust_id: str, amt: int, email: str, phone: str, name: str = ""
 ) -> None:
+    cust_name = name or (email.split("@")[0].replace(".", " ").title() if email else f"Customer {cust_id[-4:]}")
+    digits = "".join([c for c in cust_id if c.isdigit()])[-8:].ljust(8, "5")
     if not await session.get(Customer, cust_id):
         session.add(Customer(
-            id=cust_id, name="Live Razorpay Customer", email=email or "customer@sentio.live",
-            phone=phone or "+919876543210", locale="hi_IN"
+            id=cust_id, name=cust_name, email=email or f"{cust_id.lower()}@sentio.live",
+            phone=phone or f"+9198{digits}", locale="hi_IN"
         ))
     if not await session.get(Subscription, sub_id):
         session.add(Subscription(
@@ -38,6 +40,7 @@ async def advance_live_case_pipeline(session: AsyncSession, case_id: str, declin
     if ev:
         await project_event(session, ev)
 
+    win = calculate_next_legal_window(now_utc())
     intv_id = f"intv_{str(ulid.ULID()).lower()}"
     p_ev = await append_event(session, "agent", "intervention.proposed",
         {"intervention_id": intv_id, "case_id": case_id, "action_type": "whatsapp", "seq": 1}, case_id=case_id)
@@ -47,7 +50,7 @@ async def advance_live_case_pipeline(session: AsyncSession, case_id: str, declin
     rec = await evaluate_proposal(
         session, case_id=case_id, intervention_id=intv_id, action_type="whatsapp",
         proposed_paise=case_row.amount_at_risk_paise, debt_paise=case_row.amount_at_risk_paise,
-        proposed_time_utc=now_utc(), customer_opted_out=False, confidence=conf,
+        proposed_time_utc=win, customer_opted_out=False, confidence=conf,
     )
     verdict_str = rec.verdict if isinstance(rec.verdict, str) else getattr(rec.verdict, "value", str(rec.verdict))
     v_ev = await append_event(session, "policy", f"policy.{verdict_str}",
@@ -55,7 +58,6 @@ async def advance_live_case_pipeline(session: AsyncSession, case_id: str, declin
     if v_ev:
         await project_event(session, v_ev)
 
-    win = calculate_next_legal_window(now_utc())
     await append_event(session, "chrono", "chrono.window_opened",
         {"case_id": case_id, "scheduled_window": win.isoformat()}, case_id=case_id)
 
@@ -63,9 +65,11 @@ async def advance_live_case_pipeline(session: AsyncSession, case_id: str, declin
     link_info = await rzp.create_payment_link(case_row.amount_at_risk_paise, win)
     amt_str = f"₹{case_row.amount_at_risk_paise // 100}"
     url_str = link_info.get("short_url") or f"https://rzp.io/l/{case_id}"
-    t2_s, t2_u = build_t2_prompt(cause, "hi_IN", amt_str, url_str, f"Hi Customer, please pay {amt_str}.")
+    cust = await session.get(Customer, case_row.customer_id)
+    c_name = cust.name if cust else "Customer"
+    t2_s, t2_u = build_t2_prompt(cause, "hi_IN", amt_str, url_str, f"Hi {c_name}, please pay {amt_str}.")
     t2_out = await call_openrouter(session, "T2", t2_s, t2_u, settings.LLM_T2_MODEL, settings.LLM_FALLBACK_MODEL, case_id)
-    fallback = f"Hi Customer, please pay {amt_str}: {url_str}. Reply STOP to opt out."
+    fallback = f"Hi {c_name}, please pay {amt_str}: {url_str}. Reply STOP to opt out."
     msg = t2_out.get("body") if t2_out and isinstance(t2_out, dict) else fallback
     l_ok, _ = lint_message_content(msg)
 

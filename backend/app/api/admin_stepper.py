@@ -21,10 +21,13 @@ async def run_live_single_step_case(
     session: AsyncSession,
     opaque: bool = True,
     scenario_idx: int = 0,
+    custom_reply: str | None = None,
+    custom_amount: int | None = None,
 ) -> dict[str, Any]:
-    sc = get_stepper_scenario(scenario_idx, opaque)
+    sc = get_stepper_scenario(scenario_idx, opaque, custom_reply, custom_amount)
     cid, now_dt = f"cust_rzp_{str(ulid.ULID()).lower()[-6:]}", now_utc()
     sub_id, batch_id = f"sub_rzp_{cid[-6:]}", f"batch_live_{cid[-6:]}"
+    phone_digits = "".join([c for c in str(ulid.ULID()) if c.isdigit()])[-8:].ljust(8, "7")
 
     rzp = RazorpayClient()
     rzp_order = await rzp.create_order(sc["paise"], f"rcpt_{cid[-8:]}")
@@ -32,7 +35,7 @@ async def run_live_single_step_case(
 
     await session.merge(Customer(
         id=cid, name=sc["name"], email=sc["email"],
-        phone="+919876543210", locale="hi_IN", opted_out=False,
+        phone=f"+9198{phone_digits}", locale="hi_IN", opted_out=False,
     ))
     await session.merge(Subscription(
         id=sub_id, customer_id=cid, plan_id="plan_sub",
@@ -63,15 +66,15 @@ async def run_live_single_step_case(
         "proof": {"source": src, "cause": cause, "confidence": conf, "model": model_tag},
     })
 
+    legal_dt = calculate_next_legal_window(now_dt)
     intv_id = f"intv_{str(ulid.ULID()).lower()}"
-    rcpt = await evaluate_proposal(session, case_obj.id, intv_id, "payment_link", sc["paise"], sc["paise"], now_dt, customer_opted_out=False, confidence=conf)
+    rcpt = await evaluate_proposal(session, case_obj.id, intv_id, "payment_link", sc["paise"], sc["paise"], legal_dt, customer_opted_out=False, confidence=conf)
     steps.append({
         "stage": "3. Guard Compliance Gate", "actor": "policy",
         "detail": f"Evaluated 8 rules. Verdict: {rcpt.verdict} (Receipt: {rcpt.receipt_id}).",
         "proof": {"verdict": rcpt.verdict, "receipt_id": rcpt.receipt_id},
     })
 
-    legal_dt = calculate_next_legal_window(now_dt)
     c_ev = await append_event(session, "chrono", "chrono.window_opened", {"case_id": case_obj.id, "scheduled_window": "Legal Window: 09:00 - 21:00 IST", "legal_dt": legal_dt.isoformat()}, case_id=case_obj.id, batch_id=batch_id)
     if c_ev:
         await project_event(session, c_ev)

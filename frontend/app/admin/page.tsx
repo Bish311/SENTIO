@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 export default function AdminPage() {
-  const [adminToken] = useState("dev-admin-secret-2026");
+  const [adminToken] = useState(process.env.NEXT_PUBLIC_ADMIN_TOKEN || "dev-admin-secret-2026");
 
   const { data: denials, mutate: mutateDenials } = useSWR<DenialItem[]>(
     "/admin/policy-denials",

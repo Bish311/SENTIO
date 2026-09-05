@@ -57,9 +57,10 @@ async def receive_razorpay_webhook(
         amt = int(payment_entity.get("amount") or payload.get("order", {}).get("entity", {}).get("amount", 0))
         if not sub_id:
             sub_id, cust_id = f"sub_{pay_id}", f"cust_{pay_id}"
+            c_name = notes.get("name") or notes.get("customer_name") or payment_entity.get("name") or ""
             await ensure_live_subscription(
                 session, sub_id, cust_id, amt,
-                payment_entity.get("email", ""), payment_entity.get("contact", "")
+                payment_entity.get("email", ""), payment_entity.get("contact", ""), c_name
             )
         decline = payment_entity.get("error_reason") or "ERR_PAYMENT_FAILED"
         case_obj = await handle_payment_failed(

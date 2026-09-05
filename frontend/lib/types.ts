@@ -18,6 +18,36 @@ export interface CaseDetail extends CaseItem {
   customer_name?: string;
   customer_email?: string;
   customer_phone?: string;
+  customer?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    locale?: string;
+  } | null;
+  subscription?: {
+    plan_id?: string;
+    amount_paise?: number;
+    status?: string;
+    retry_budget_used?: number;
+  } | null;
+  interventions?: Array<{
+    id: string;
+    seq: number;
+    type: string;
+    channel: string;
+    status: string;
+    policy_receipt?: {
+      receipt_id?: string;
+      verdict?: string;
+      [key: string]: unknown;
+    };
+  }>;
+  promises?: Array<{
+    id: string;
+    promised_date: string;
+    status: string;
+    confidence?: number;
+  }>;
   timeline: CaseTimelineEvent[];
 }
 

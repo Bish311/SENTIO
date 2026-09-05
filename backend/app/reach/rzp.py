@@ -27,7 +27,7 @@ class RazorpayClient:
                     return resp.json()
             except Exception:
                 pass
-        return {"id": f"order_{receipt[:30]}", "amount": amount_paise, "currency": "INR"}
+        return {"id": f"order_{receipt[:30]}", "amount": amount_paise, "currency": "INR", "status": "simulated"}
 
     async def create_payment_link(
         self,
@@ -52,7 +52,7 @@ class RazorpayClient:
                 pass
 
         ts = int(expire_by.timestamp())
-        return {"id": f"plink_{ts}", "amount": amount_paise, "status": "created", "short_url": f"https://rzp.io/l/{ts}"}
+        return {"id": f"plink_{ts}", "amount": amount_paise, "status": "simulated", "short_url": f"https://rzp.io/i/{ts}"}
 
     async def fetch_subscription(self, subscription_id: str) -> dict[str, Any] | None:
         async with httpx.AsyncClient(base_url=self.base_url, auth=self.auth) as client:

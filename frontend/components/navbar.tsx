@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import useSWR from "swr";
 import { fetcher } from "@/lib/api";
 import { ThemeToggle } from "./theme-toggle";
-import { Activity, Settings } from "lucide-react";
+import { Activity, Settings, Zap } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
