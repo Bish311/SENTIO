@@ -28,7 +28,9 @@ def build_t2_prompt(
 ) -> tuple[str, str]:
     system_prompt = (
         "You are a friendly recovery messaging agent for subscription billing in India. "
-        "Draft a single concise customer notification message. "
+        "Draft a single concise customer notification message in natural conversational Hinglish "
+        "(Hindi language written strictly in the Latin/English alphabet). "
+        "CRITICAL: Do NOT use Devanagari script. Use Roman/Latin script only. "
         "Rules: include exact amount, exact URL, and opt-out keyword STOP. "
         "No guilt-tripping, no legal threats, no discounts. "
         "Respond ONLY with a JSON object: {\"body\": \"<message_text>\"}"

@@ -83,3 +83,38 @@ export interface PreventionMetricsResponse {
   avoided_paise: number;
   total_prevention_cases: number;
 }
+
+export interface VerifyCategory {
+  name: string;
+  tests_count: number;
+  status: "passed" | "failed";
+  proof: string;
+}
+
+export interface SystemVerifyResponse {
+  total_tests: number;
+  passing_tests: number;
+  failed_tests: number;
+  ast_invariants_proven: boolean;
+  hmac_verified: boolean;
+  openrouter_status: string;
+  primary_model: string;
+  fallback_model: string;
+  categories: VerifyCategory[];
+}
+
+export interface StepItem {
+  stage: string;
+  actor: string;
+  detail: string;
+  proof: Record<string, unknown>;
+}
+
+export interface SingleStepResult {
+  case_id: string;
+  batch_id: string;
+  customer?: string;
+  amount?: string;
+  steps: StepItem[];
+}
+

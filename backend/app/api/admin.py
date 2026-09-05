@@ -1,10 +1,12 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.admin_stepper import run_live_single_step_case
+from app.api.admin_verify import get_system_verification_report
 from app.core.config import settings
 from app.core.db import get_db
 from app.models import Event, Policy
@@ -23,30 +25,27 @@ class KillSwitchRequest(BaseModel):
     enabled: bool
 
 
+class SingleStepRequest(BaseModel):
+    opaque: bool = Field(default=True)
+    scenario_idx: int = Field(default=0)
+
+
 @router.post("/kill-switch")
 async def toggle_kill_switch(
     body: KillSwitchRequest,
     token: str = Depends(verify_admin_token),
     session: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    policy_query = select(Policy).where(Policy.name == "kill_switch")
-    result = await session.execute(policy_query)
-    policy_row = result.scalar_one_or_none()
-
-    if policy_row is None:
-        policy_row = Policy(
-            name="kill_switch", params={"enabled": body.enabled}, enabled=body.enabled
-        )
-        session.add(policy_row)
+    res = await session.execute(select(Policy).where(Policy.name == "kill_switch"))
+    p = res.scalar_one_or_none()
+    if p is None:
+        p = Policy(name="kill_switch", params={"enabled": body.enabled}, enabled=body.enabled)
+        session.add(p)
     else:
-        policy_row.params = {"enabled": body.enabled}
-        policy_row.enabled = body.enabled
+        p.params, p.enabled = {"enabled": body.enabled}, body.enabled
 
     await append_event(
-        session=session,
-        actor="admin",
-        event_type="policy.kill_switch_toggled",
-        payload={"enabled": body.enabled},
+        session, "admin", "policy.kill_switch_toggled", payload={"enabled": body.enabled}
     )
     await session.commit()
     return {"status": "ok", "kill_switch_active": body.enabled}
@@ -57,26 +56,31 @@ async def get_policy_denials(
     token: str = Depends(verify_admin_token),
     session: AsyncSession = Depends(get_db),
 ) -> list[dict[str, Any]]:
-    query = (
-        select(Event)
-        .where(Event.event_type == "policy.denied")
-        .order_by(Event.id.desc())
-        .limit(100)
-    )
-    result = await session.execute(query)
-    events = result.scalars().all()
-
-    denials: list[dict[str, Any]] = []
+    q = select(Event).where(Event.event_type == "policy.denied")
+    events = (await session.execute(q.order_by(Event.id.desc()).limit(100))).scalars().all()
+    out: list[dict[str, Any]] = []
     for ev in events:
-        denials.append(
-            {
-                "event_id": ev.id,
-                "case_id": ev.case_id,
-                "ts": ev.ts.isoformat(),
-                "receipt": ev.payload.get("receipt", {}),
-            }
-        )
-    return denials
+        out.append({
+            "event_id": ev.id, "case_id": ev.case_id, "ts": ev.ts.isoformat(),
+            "receipt": ev.payload.get("receipt", {}),
+        })
+    return out
+
+
+@router.get("/system-verify")
+async def system_verify(token: str = Depends(verify_admin_token)) -> dict[str, Any]:
+    return get_system_verification_report()
+
+
+@router.post("/single-step")
+async def simulate_single_step(
+    body: SingleStepRequest,
+    token: str = Depends(verify_admin_token),
+    session: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    return await run_live_single_step_case(
+        session, opaque=body.opaque, scenario_idx=body.scenario_idx
+    )
 
 
 @router.get("/events/export")
@@ -84,20 +88,12 @@ async def export_events(
     token: str = Depends(verify_admin_token),
     session: AsyncSession = Depends(get_db),
 ) -> list[dict[str, Any]]:
-    query = select(Event).order_by(Event.id.asc()).limit(1000)
-    result = await session.execute(query)
-    events = result.scalars().all()
-
+    q = select(Event).order_by(Event.id.asc()).limit(1000)
+    events = (await session.execute(q)).scalars().all()
     exported: list[dict[str, Any]] = []
-    for ev in events:
-        exported.append(
-            {
-                "id": ev.id,
-                "ts": ev.ts.isoformat(),
-                "actor": ev.actor,
-                "event_type": ev.event_type,
-                "case_id": ev.case_id,
-                "payload": ev.payload,
-            }
-        )
+    for e in events:
+        exported.append({
+            "id": e.id, "ts": e.ts.isoformat(), "event_type": e.event_type,
+            "actor": e.actor, "case_id": e.case_id, "payload": e.payload,
+        })
     return exported

