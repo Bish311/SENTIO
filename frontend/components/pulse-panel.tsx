@@ -13,8 +13,8 @@ export function PulsePanel() {
     { refreshInterval: 5000 }
   );
 
-  const preventedCount = data?.prevented_count || 12;
-  const avoidedPaise = data?.avoided_paise || 2480000;
+  const preventedCount = data?.prevented_count ?? 0;
+  const avoidedPaise = data?.avoided_paise ?? 0;
 
   return (
     <div className="card p-4 sm:p-5 border" style={{ borderColor: "rgba(16, 185, 129, 0.3)" }}>

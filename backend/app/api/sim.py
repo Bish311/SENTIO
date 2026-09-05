@@ -77,22 +77,15 @@ async def handle_link_action(
     request: LinkActionRequest,
     session: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
-    link_res = await session.execute(
-        select(PaymentLink).where(PaymentLink.id == request.rzp_link_id)
-    )
+    link_res = await session.execute(select(PaymentLink).where(PaymentLink.id == request.rzp_link_id))
     link_row = link_res.scalar_one_or_none()
     if link_row is None:
         raise HTTPException(status_code=404, detail="Payment link not found")
 
     if request.action == "paid":
         event_row = await append_event(
-            session=session,
-            actor="system",
-            event_type="payment_link.paid",
-            payload={
-                "rzp_link_id": request.rzp_link_id,
-                "amount_paise": link_row.amount_paise,
-            },
+            session=session, actor="system", event_type="payment_link.paid",
+            payload={"rzp_link_id": request.rzp_link_id, "amount_paise": link_row.amount_paise},
         )
         if event_row is not None:
             await project_event(session, event_row)

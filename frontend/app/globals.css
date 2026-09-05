@@ -2,39 +2,39 @@
 
 @layer base {
   :root {
-    --bg-primary: #fdf4d2;
-    --bg-secondary: #f4e9be;
-    --bg-card: #ffffff;
-    --bg-surface: #f6ecce;
-    --accent-blue: #7faecc;
-    --accent-purple: #7a6396;
+    --bg-primary: #08090b;
+    --bg-secondary: #0d0e12;
+    --bg-card: #111216;
+    --bg-surface: #16171d;
+    --accent-gold: #f59e0b;
+    --accent-emerald: #10b981;
     --accent-blue-strong: #3b82f6;
     --accent-purple-strong: #6366f1;
-    --border-color: #d1be8c;
-    --border-hover: #b8a065;
-    --text-primary: #0f172a;
-    --text-secondary: #334155;
+    --border-color: #202228;
+    --border-hover: #2f333c;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
     --text-muted: #64748b;
-    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-    --card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.1);
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.6);
   }
 
   .dark {
-    --bg-primary: #0b222d;
-    --bg-secondary: #0f3040;
-    --bg-card: #153e53;
-    --bg-surface: #0f2e3e;
-    --accent-blue: #c4897a;
-    --accent-purple: #707590;
-    --accent-blue-strong: #e07a5f;
-    --accent-purple-strong: #818cf8;
-    --border-color: #266585;
-    --border-hover: #3782aa;
-    --text-primary: #ffffff;
-    --text-secondary: #f1f5f9;
-    --text-muted: #94a3b8;
-    --card-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-    --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.55);
+    --bg-primary: #08090b;
+    --bg-secondary: #0d0e12;
+    --bg-card: #111216;
+    --bg-surface: #16171d;
+    --accent-gold: #f59e0b;
+    --accent-emerald: #10b981;
+    --accent-blue-strong: #3b82f6;
+    --accent-purple-strong: #6366f1;
+    --border-color: #202228;
+    --border-hover: #2f333c;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --card-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.8);
   }
 }
 

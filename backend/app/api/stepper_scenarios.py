@@ -1,48 +1,57 @@
+import random
 from typing import Any
 
-SCENARIOS: list[dict[str, Any]] = [
-    {
-        "name": "Priya Patel",
-        "email": "priya@corp.in",
-        "paise": 149900,
-        "amount_str": "₹1,499",
-        "code": "ERR_ISSUER_SETTLEMENT_0x82",
-        "desc": "Sub-node authorization handshake refused at leg 2",
-        "reply": "Priya here, kal subah 10 baje tak transfer kar dungi pakka",
-    },
-    {
-        "name": "Amit Verma",
-        "email": "amit.v@startup.in",
-        "paise": 49900,
-        "amount_str": "₹499",
-        "code": "NODE_ROUTE_LATENCY_TIMEOUT",
-        "desc": "Inter-bank switch latency exceeded threshold (5000ms)",
-        "reply": "Bhai abhi cash crunch hai, salary 5th ko aayegi tab karta hu",
-    },
-    {
-        "name": "Sneha Reddy",
-        "email": "sneha.r@design.co",
-        "paise": 299900,
-        "amount_str": "₹2,999",
-        "code": "AUTH_INTERMEDIARY_DROP_0x33",
-        "desc": "Payment gateway dropped handshake packet on network switch",
-        "reply": "Weekend pe 7th ko reminder bhejna, tab account me balance hoga",
-    },
-    {
-        "name": "Vikram Singh",
-        "email": "vikram@tech.in",
-        "paise": 79900,
-        "amount_str": "₹799",
-        "code": "insufficient_funds",
-        "desc": "Insufficient funds in customer account",
-        "reply": "Agle hafte 10th ko salary aayegi tab pay kar dunga pakka",
-    },
+FIRST_NAMES = ["Rohan", "Ananya", "Rajesh", "Kavita", "Siddharth", "Meera", "Arjun", "Pooja", "Aditya", "Neha", "Vikram", "Sneha", "Karan", "Tanvi"]
+LAST_NAMES = ["Sharma", "Nair", "Iyer", "Gupta", "Deshmukh", "Kulkarni", "Mukherjee", "Rao", "Mehta", "Patel", "Verma", "Reddy", "Choudhury", "Bose"]
+AMOUNTS = [39900, 49900, 79900, 99900, 129900, 149900, 199900, 249900, 299900, 499900]
+DECLINES = [
+    ("NODE_ROUTE_LATENCY_TIMEOUT", "Inter-bank switch latency exceeded threshold (5000ms)"),
+    ("ERR_ISSUER_SETTLEMENT_0x82", "Sub-node authorization handshake refused at leg 2"),
+    ("AUTH_INTERMEDIARY_DROP_0x33", "Payment gateway dropped handshake packet on network switch"),
+    ("BANK_DOWNTIME_TRANSIENT", "Core banking server temporary timeout during peak processing"),
+    ("insufficient_funds", "Customer account balance below required mandate threshold"),
+    ("GATEWAY_ROUTING_FAILURE", "NPCI UPI switch dropped packet during multi-bank routing"),
+]
+REPLIES = [
+    "Salary 7th ko credit hogi company se, tab auto-debit hone dena",
+    "Mera payday 10 tarikh hai, tab tak payment link active rakhna please",
+    "Abhi out of station train me hu network nahi aa raha, kal shaam tak UPI se pay karta hu",
+    "Purana debit card block ho gaya tha, naya card Tuesday tak aayega tab update karunga",
+    "GPay aur SBI server down chal raha hai subah se, raat 9 baje try karta hu",
+    "Savings account me paise kal transfer honge FD liquidate hone ke baad, parso pay kar dunga",
+    "Client ka invoice payment Monday 8th ko clear hoga, tabhi kar paunga",
+    "Ye card mere husband ka hai, wo kal sham ko office se aake OTP denge tab ho payega",
+    "Mahine ke aakhri din 30 tarikh ko salary aati hai, tab debit kar lena",
+    "Bonus aane wala hai Friday ko, 12th ko settle karta hu pakka",
+    "Mujhe invoice samajh nahi aaya, kal account team se confirm karke parso pay karunga",
+    "Main kal subah 10 baje bank open hote hi transfer kar dunga",
 ]
 
 
-def get_stepper_scenario(idx: int, opaque: bool = True) -> dict[str, Any]:
-    sc = dict(SCENARIOS[idx % len(SCENARIOS)])
+def get_stepper_scenario(
+    idx: int,
+    opaque: bool = True,
+    custom_reply: str | None = None,
+    custom_amount: int | None = None,
+) -> dict[str, Any]:
+    rng = random.Random()
+    f_name = FIRST_NAMES[idx % len(FIRST_NAMES)]
+    l_name = LAST_NAMES[(idx + rng.randint(1, 10)) % len(LAST_NAMES)]
+    full_name = f"{f_name} {l_name}"
+    email = f"{f_name.lower()}.{l_name.lower()}@domain.in"
+    paise = custom_amount if custom_amount is not None else AMOUNTS[(idx + rng.randint(0, len(AMOUNTS) - 1)) % len(AMOUNTS)]
+
+    code, desc = DECLINES[idx % len(DECLINES)]
     if not opaque:
-        sc["code"] = "insufficient_funds"
-        sc["desc"] = "Insufficient funds"
-    return sc
+        code, desc = "insufficient_funds", "Insufficient funds"
+
+    reply = custom_reply if (custom_reply and custom_reply.strip()) else REPLIES[idx % len(REPLIES)]
+    return {
+        "name": full_name,
+        "email": email,
+        "paise": paise,
+        "amount_str": f"₹{paise // 100:,}",
+        "code": code,
+        "desc": desc,
+        "reply": reply,
+    }

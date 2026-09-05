@@ -14,9 +14,10 @@ async def diagnose_payment_failure(
     case_id: str,
     decline_code: str,
     error_desc: str | None = None,
+    force_llm: bool = True,
 ) -> tuple[str, float, str, bool]:
     matrix_hit = lookup_decline_matrix(decline_code, error_desc)
-    if matrix_hit is not None:
+    if not force_llm and matrix_hit is not None:
         cause, conf = matrix_hit
         await _record_diagnosis(session, case_id, cause, conf, "matrix", False, decline_code)
         return cause, conf, "matrix", False
@@ -34,29 +35,20 @@ async def diagnose_payment_failure(
         case_id=case_id,
     )
 
-    cause = "other"
-    conf = 0.5
-    handoff = True
+    cause, conf, src, handoff = "other", 0.5, "llm", True
     if parsed and isinstance(parsed, dict):
         raw_cause = str(parsed.get("cause", "other"))
         raw_conf = float(parsed.get("confidence", 0.5))
-        if raw_conf >= 0.7 and raw_cause in [
-            "cash_timing",
-            "friction",
-            "dead_instrument",
-            "transient",
-            "budget_burned",
-        ]:
-            cause = raw_cause
-            conf = raw_conf
-            handoff = False
+        valid_causes = ["cash_timing", "friction", "dead_instrument", "transient", "budget_burned"]
+        if raw_conf >= 0.7 and raw_cause in valid_causes:
+            cause, conf, handoff = raw_cause, raw_conf, False
         else:
-            cause = raw_cause
-            conf = raw_conf
-            handoff = True
+            cause, conf, handoff = raw_cause, raw_conf, True
+    elif matrix_hit is not None:
+        cause, conf, src, handoff = matrix_hit[0], matrix_hit[1], "matrix", False
 
-    await _record_diagnosis(session, case_id, cause, conf, "llm", handoff, decline_code)
-    return cause, conf, "llm", handoff
+    await _record_diagnosis(session, case_id, cause, conf, src, handoff, decline_code)
+    return cause, conf, src, handoff
 
 
 async def _record_diagnosis(

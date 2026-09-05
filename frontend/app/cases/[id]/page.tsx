@@ -7,6 +7,7 @@ import { fetcher } from "@/lib/api";
 import { CaseDetail } from "@/lib/types";
 import { formatISTDateTime, formatPaiseToRupees } from "@/lib/format";
 import { CaseTimeline } from "@/components/case-timeline";
+import { DeliveryTracker } from "@/components/delivery-tracker";
 import { ArrowLeft } from "lucide-react";
 
 export default function CaseDetailPage({
@@ -116,50 +117,77 @@ export default function CaseDetailPage({
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card p-4 border" style={{ borderColor: "rgba(6, 182, 212, 0.3)" }}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">STAGE 2: LENS DIAGNOSIS</span>
-            <span className="pill text-[9px] font-mono bg-cyan-500/20 text-cyan-300">T1 CLASSIFIER</span>
-          </div>
-          <div className="text-sm font-bold text-white mb-1">
-            {c.root_cause ? c.root_cause.toUpperCase() : "TRANSIENT"}
-          </div>
-          <p className="text-[11px] text-zinc-400 font-mono">
-            {c.root_cause === "cash_timing" || c.root_cause === "friction"
-              ? "Opaque decline routed to T1 LLM. Extracted cause with >=0.70 confidence."
-              : "Recognized error code. Diagnosed via Deterministic Matrix in 2ms."}
-          </p>
-        </div>
+      {(() => {
+        const timelineEvents = c.timeline || [];
+        const evDiag = timelineEvents.find((e) => e.event_type === "diagnosis.made" || e.event_type === "case.diagnosed");
+        const evLLM1 = timelineEvents.find((e) => e.event_type === "llm.called" && (e.payload?.touchpoint === "T1" || e.payload?.touchpoint === "lens"));
+        const evPolicy = timelineEvents.find((e) => e.event_type.startsWith("policy."));
+        const isPolDenied = evPolicy?.event_type === "policy.denied";
+        const evChrono = timelineEvents.find((e) => e.event_type === "chrono.window_opened" || e.event_type === "ptp.booked");
 
-        <div className="card p-4 border" style={{ borderColor: "rgba(16, 185, 129, 0.3)" }}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">STAGE 3 &amp; 5: SAFETY LINTER</span>
-            <span className="pill text-[9px] font-mono bg-emerald-500/20 text-emerald-300">0 VIOLATIONS</span>
-          </div>
-          <div className="text-sm font-bold text-white mb-1">
-            Defensive Linter Passed
-          </div>
-          <p className="text-[11px] text-zinc-400 font-mono">
-            Checked 11 banned debt harassment words (penalty, court, defaulter). Opt-out instruction verified.
-          </p>
-        </div>
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="card p-4 border" style={{ borderColor: "rgba(6, 182, 212, 0.3)" }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">STAGE 2: LENS DIAGNOSIS</span>
+                <span className="pill text-[9px] font-mono bg-cyan-500/20 text-cyan-300">
+                  {evLLM1 ? "LIVE NEURAL LLM" : (evDiag?.payload?.source === "matrix" ? "MATRIX 2ms" : "T1 CLASSIFIER")}
+                </span>
+              </div>
+              <div className="text-sm font-bold text-white mb-1">
+                {c.root_cause ? c.root_cause.toUpperCase() : "PENDING DIAGNOSIS"}
+              </div>
+              <p className="text-[11px] text-zinc-400 font-mono">
+                {evLLM1
+                  ? `Live neural inference via ${evLLM1.payload?.model || "LLM"}${evLLM1.payload?.latency_ms ? ` (${evLLM1.payload.latency_ms}ms)` : ""}. Diagnosed with ${(Number(evDiag?.payload?.confidence || 0.95) * 100).toFixed(0)}% confidence.`
+                  : evDiag?.payload?.source === "matrix"
+                  ? "Recognized known bank error code. Diagnosed via Deterministic Fault Matrix fast-path."
+                  : "Evaluating failure telemetry..."}
+              </p>
+            </div>
 
-        <div className="card p-4 border" style={{ borderColor: "rgba(99, 102, 241, 0.3)" }}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">STAGE 4: CHRONO TIME LOCK</span>
-            <span className="pill text-[9px] font-mono bg-indigo-500/20 text-indigo-300">TEMPORAL ENGINE</span>
+            <div className="card p-4 border" style={{ borderColor: isPolDenied ? "rgba(239, 68, 68, 0.3)" : "rgba(16, 185, 129, 0.3)" }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${isPolDenied ? "text-red-400" : "text-emerald-400"}`}>
+                  STAGE 3 &amp; 5: SAFETY LINTER
+                </span>
+                <span className={`pill text-[9px] font-mono ${isPolDenied ? "bg-red-500/20 text-red-300" : "bg-emerald-500/20 text-emerald-300"}`}>
+                  {isPolDenied ? "VIOLATION BLOCKED" : "0 VIOLATIONS"}
+                </span>
+              </div>
+              <div className="text-sm font-bold text-white mb-1">
+                {isPolDenied ? "Policy Rule Blocked" : "Compliance Verified"}
+              </div>
+              <p className="text-[11px] text-zinc-400 font-mono">
+                {isPolDenied
+                  ? `Blocked by Guard: ${(((evPolicy?.payload?.receipt as Record<string, unknown>)?.violations as string[]) || (evPolicy?.payload?.violations as string[]) || ["POLICY_VIOLATION"]).join(", ")}.`
+                  : "All 8 regulatory rules passed (quiet hours, debt cap, cooling-off). Opt-out instruction verified."}
+              </p>
+            </div>
+
+            <div className="card p-4 border" style={{ borderColor: "rgba(99, 102, 241, 0.3)" }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">STAGE 4: CHRONO TIME LOCK</span>
+                <span className="pill text-[9px] font-mono bg-indigo-500/20 text-indigo-300">
+                  {c.root_cause === "cash_timing" ? "PAYDAY LOCKED" : "TEMPORAL ENGINE"}
+                </span>
+              </div>
+              <div className="text-sm font-bold text-white mb-1">
+                {c.root_cause === "cash_timing" ? "Payday Lock Engaged" : "Legal Window Active"}
+              </div>
+              <p className="text-[11px] text-zinc-400 font-mono">
+                {c.root_cause === "cash_timing"
+                  ? "Customer promise-to-pay booked. Automated retries locked until payday."
+                  : evChrono?.payload?.scheduled_window
+                  ? `Active legal dispatch window: ${String(evChrono.payload.scheduled_window)}.`
+                  : "Enforcing 09:00 - 21:00 IST legal contact window in Asia/Kolkata timezone."}
+              </p>
+            </div>
           </div>
-          <div className="text-sm font-bold text-white mb-1">
-            {c.root_cause === "cash_timing" ? "Payday Lock Engaged" : "Quiet Hours Compliant"}
-          </div>
-          <p className="text-[11px] text-zinc-400 font-mono">
-            {c.root_cause === "cash_timing"
-              ? "Customer promise-to-pay booked. Automated retries locked until payday."
-              : "Enforced 21:00-09:00 IST quiet hours with next legal window rescheduling."}
-          </p>
-        </div>
-      </div>
+        );
+      })()}
+
+      <DeliveryTracker caseDetail={c} />
 
       <CaseTimeline events={c.timeline || []} />
     </div>

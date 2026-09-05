@@ -31,6 +31,7 @@ async def test_diagnose_payment_failure_matrix_path(db_session: AsyncSession) ->
         session=db_session,
         case_id="case_lens_01",
         decline_code="insufficient_funds",
+        force_llm=False,
     )
     assert cause == "cash_timing"
     assert conf == 1.0
