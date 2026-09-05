@@ -15,7 +15,8 @@ The LLM subsystem (`backend/app/llm/`) is mathematically isolated from execution
 
 ### 1.4 Click-Through Explainability
 Every rupee recovered or avoided must be click-through explainable:
-$$\text{Webhook Failure} \longrightarrow \text{Lens Diagnosis} \longrightarrow \text{Guard Receipt} \longrightarrow \text{Reach Dispatch} \longrightarrow \text{Customer Reply (PTP)} \longrightarrow \text{Settlement}$$
+`Webhook Failure -> Lens Diagnosis -> Guard Receipt -> Reach Dispatch -> Customer Reply (PTP) -> Settlement`
+
 Every state transition references an immutable event in the Spine, allowing operators to inspect the exact prompt, raw neural output, and cryptographic policy verdict.
 
 ### 1.5 The 100-Line Code Scale Invariant (Rule 2)
@@ -69,7 +70,7 @@ flowchart LR
   - `root_cause`: Normalized classification (`insufficient_funds`, `auth_friction`, `card_expired`, `transient_error`, `budget_exhausted`).
   - `rationale`: Concise, 1-sentence plain-English technical explanation.
   - `confidence`: Float between `0.00` and `1.00`.
-- **Gate**: Confidence $< 0.70$ routes the case to human handoff and halts autonomous execution.
+- **Gate**: Confidence `< 0.70` routes the case to human handoff and halts autonomous execution.
 
 #### Touchpoint T2: Localized Hinglish Message Drafting
 - **Owner**: `backend/app/reach/draft.py`
@@ -87,7 +88,7 @@ flowchart LR
   - `ptp_date`: ISO-8601 formatted date string (`YYYY-MM-DD`).
   - `intent_detected`: Boolean confirming payment willingness.
   - `confidence`: Float between `0.00` and `1.00`.
-- **Gate**: Confidence $\ge 0.70$ and date $\le 30$ days in the future books a promise in `promises` and reschedules outreach.
+- **Gate**: Confidence `>= 0.70` and date `<= 30` days in the future books a promise in `promises` and reschedules outreach.
 
 ---
 
@@ -189,9 +190,7 @@ Every evaluation generates an immutable Pydantic receipt:
 Chrono (`backend/app/chrono/`) manages all time-sensitive state and scheduling.
 
 ### 5.1 Legal Daylight Window Rescheduling
-When Guard blocks outreach under Rule 3 (Quiet Hours), Chrono calculates the next legal contact window:
-$$T_{\text{reschedule}} = \text{Date}_{\text{next}}(\text{09:15:00 IST})$$
-Chrono emits a `chrono.rescheduled` event to the Spine, logging the exact resume timestamp, and registers an asynchronous wake-up job in the `jobs` table.
+When Guard blocks outreach under Rule 3 (Quiet Hours), Chrono calculates the next legal contact window and reschedules to `09:15:00 IST` the following day. Chrono emits a `chrono.rescheduled` event to the Spine, logging the exact resume timestamp, and registers an asynchronous wake-up job in the `jobs` table.
 
 ### 5.2 Payday Cycle Window Matching
 Chrono tracks typical Indian corporate salary distributions (28th through 5th of each month). If a failure occurs between the 20th and 27th due to `insufficient_funds`, Chrono times the primary recovery link to dispatch on the customer's predicted payday window `[payday+1, payday+3]`, maximizing recovery probability.
@@ -275,7 +274,11 @@ To mathematically validate recovery lift without marketing bias, SENTIO incorpor
 
 ### 8.2 Frozen Benchmark Proof (Seed 42)
 
-$$\text{Causal Lift} = \frac{\text{Recovered}_{\text{Arm A}} - \text{Recovered}_{\text{Arm B}}}{\text{Recovered}_{\text{Arm B}}} = \frac{₹72,841 - ₹17,264}{₹17,264} = \mathbf{4.22\times}$$
+```
+Causal Lift = (Recovered_ArmA - Recovered_ArmB) / Recovered_ArmB
+            = (Rs 72,841 - Rs 17,264) / Rs 17,264
+            = 4.22x
+```
 
 | Metric | Arm A (Sentio AI) | Arm B (Naive Baseline) | Delta / Performance |
 |---|---|---|---|
