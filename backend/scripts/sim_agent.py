@@ -86,6 +86,21 @@ async def run_agent_case(
             if den_ev is not None:
                 await project_event(session, den_ev)
 
+            sched_ev = await append_event(
+                session=session,
+                actor="chrono",
+                event_type="chrono.rescheduled",
+                case_id=case_obj.id,
+                batch_id=batch_id,
+                payload={
+                    "intervention_id": intv_id,
+                    "rescheduled_for": "09:15 AM IST (Next Legal Window)",
+                    "reason": "Quiet Hours: Night messaging paused until 09:15 IST",
+                },
+            )
+            if sched_ev is not None:
+                await project_event(session, sched_ev)
+
         receipt = await evaluate_proposal(
             session=session,
             case_id=case_obj.id,

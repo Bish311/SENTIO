@@ -11,10 +11,10 @@ interface PipelineBoardProps {
 
 const COLUMNS = [
   { id: "opened", label: "Opened", states: ["opened"], dot: "#f59e0b", badgeBg: "rgba(245,158,11,0.15)", badgeText: "#d97706" },
-  { id: "diagnosed", label: "Diagnosed", states: ["diagnosed"], dot: "#0ea5e9", badgeBg: "rgba(14,165,233,0.15)", badgeText: "#0284c7" },
+  { id: "diagnosed", label: "Diagnosed", states: ["diagnosed"], dot: "#0ea5e9", badgeBg: "rgba(145,165,233,0.15)", badgeText: "#0284c7" },
   { id: "in_recovery", label: "In Recovery", states: ["in_recovery"], dot: "#6366f1", badgeBg: "rgba(99,102,241,0.15)", badgeText: "#4f46e5" },
-  { id: "settled", label: "Settled", states: ["settled"], dot: "#10b981", badgeBg: "rgba(16,185,129,0.15)", badgeText: "#059669" },
-  { id: "closed", label: "Closed / Halted", states: ["halted", "closed"], dot: "#94a3b8", badgeBg: "rgba(148,163,184,0.15)", badgeText: "#64748b" },
+  { id: "settled", label: "Settled", states: ["settled", "recovered"], dot: "#10b981", badgeBg: "rgba(16,185,129,0.15)", badgeText: "#059669" },
+  { id: "closed", label: "Closed / Halted", states: ["halted", "closed", "closed_lost"], dot: "#94a3b8", badgeBg: "rgba(148,163,184,0.15)", badgeText: "#64748b" },
 ];
 
 export function PipelineBoard({ cases }: PipelineBoardProps) {
@@ -88,9 +88,12 @@ export function PipelineBoard({ cases }: PipelineBoardProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 flex-1">
         {COLUMNS.map((col) => {
-          const items = cases.filter((c) => col.states.includes(c.state));
+          const items = cases.filter((c) => col.states.includes((c.state || "").toLowerCase()));
           const totalPaise = items.reduce(
-            (acc, curr) => acc + (curr.state === "settled" ? curr.recovered_paise : curr.amount_at_risk_paise),
+            (acc, curr) => {
+              const s = (curr.state || "").toLowerCase();
+              return acc + (s === "settled" || s === "recovered" ? curr.recovered_paise : curr.amount_at_risk_paise);
+            },
             0
           );
 

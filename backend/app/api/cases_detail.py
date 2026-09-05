@@ -70,20 +70,22 @@ async def get_case_detail(
             }
         )
 
+    case_dict = {
+        "id": case_row.id,
+        "subscription_id": case_row.subscription_id,
+        "customer_id": case_row.customer_id,
+        "state": case_row.state,
+        "amount_at_risk_paise": case_row.amount_at_risk_paise,
+        "root_cause": case_row.root_cause,
+        "arm": case_row.arm,
+        "outcome": case_row.outcome,
+        "recovered_paise": case_row.recovered_paise,
+        "opened_at": case_row.opened_at.isoformat() if case_row.opened_at else None,
+        "closed_at": case_row.closed_at.isoformat() if case_row.closed_at else None,
+    }
     return {
-        "case": {
-            "id": case_row.id,
-            "subscription_id": case_row.subscription_id,
-            "customer_id": case_row.customer_id,
-            "state": case_row.state,
-            "amount_at_risk_paise": case_row.amount_at_risk_paise,
-            "root_cause": case_row.root_cause,
-            "arm": case_row.arm,
-            "outcome": case_row.outcome,
-            "recovered_paise": case_row.recovered_paise,
-            "opened_at": case_row.opened_at.isoformat() if case_row.opened_at else None,
-            "closed_at": case_row.closed_at.isoformat() if case_row.closed_at else None,
-        },
+        **case_dict,
+        "case": case_dict,
         "timeline": timeline,
         "interventions": intv_list,
         "promises": prom_list,
